@@ -1,4 +1,9 @@
-# The Sunstrider Core
+# Fork targets
+
+This fork's focus is mainly to port back the removed scripts and eventually do more optimizations on the current code.
+
+
+# Sunstrider-related
 
 *_Please note_*: this is a legacy version of the project which is no longer supported or developed. All development is now private.
 If you'd like to work on the project or ask questions, join our Discord!
