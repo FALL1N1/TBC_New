@@ -121,7 +121,7 @@ class boss_shade_of_akama : public CreatureScript
             void EnterEvadeMode(EvadeReason /*why*/) override
             {
                 BossAI::EnterEvadeMode();
-                //summonsGenerator.DoAction(ACTION_DESPAWN_ALL, NULL, 0);
+                summonsGenerator.DoAction(ACTION_DESPAWN_ALL, NULL, 0);
                 events2.ScheduleEvent(EVENT_SHADE_RESET_ENCOUNTER, 20000);
                 me->SetVisible(false);
                 ChannelersAction(ACTION_KILL_CHANNELERS);                    
@@ -130,7 +130,7 @@ class boss_shade_of_akama : public CreatureScript
             void JustDied(Unit* killer)
             {
                 BossAI::JustDied(killer);
-                //summonsGenerator.DoAction(ACTION_DESPAWN_ALL, NULL, 0);
+                summonsGenerator.DoAction(ACTION_DESPAWN_ALL, NULL, 0);
                 summonsChanneler.DespawnAll();
                 me->CastSpell(me, SPELL_SHADE_OF_AKAMA_TRIGGER, true);
                 if (Creature* akama = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_AKAMA_SHADE)))
@@ -149,7 +149,7 @@ class boss_shade_of_akama : public CreatureScript
             {
                 if (param == ACTION_START_ENCOUNTER)
                 {
-                    //summonsGenerator.DoAction(ACTION_START_ENCOUNTER, NULL, 0);
+                    summonsGenerator.DoAction(ACTION_START_ENCOUNTER, NULL, 0);
                     ChannelersAction(ACTION_START_ENCOUNTER);
                     events.ScheduleEvent(EVENT_SHADE_CHECK_DISTANCE, 1000);
                 }
@@ -176,8 +176,8 @@ class boss_shade_of_akama : public CreatureScript
                         for (std::list<Creature*>::const_iterator itr = SpawnerList.begin(); itr != SpawnerList.end(); ++itr)
                             summonsGenerator.Summon(*itr);
 
-                        //summonsChanneler.Respawn();
-                        //summonsGenerator.Respawn();
+                        summonsChanneler.Respawn();
+                        summonsGenerator.Respawn();
                         ChannelersAction(ACTION_CHANNELERS_START_CHANNEL);
                         
                         if (Creature* akama = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_AKAMA_SHADE)))
@@ -186,8 +186,8 @@ class boss_shade_of_akama : public CreatureScript
                     }
                     case EVENT_SHADE_RESET_ENCOUNTER:
                         me->SetVisible(true);
-                        //summonsGenerator.Respawn(); 
-                        //summonsChanneler.Respawn();
+                        summonsGenerator.Respawn(); 
+                        summonsChanneler.Respawn();
                         ChannelersAction(ACTION_CHANNELERS_START_CHANNEL);
 
                         if (Creature* akama = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_AKAMA_SHADE)))
@@ -221,7 +221,7 @@ class boss_shade_of_akama : public CreatureScript
                                 me->GetMotionMaster()->Clear();
                             else if (slow == 0)
                             {
-                                //summonsGenerator.DoAction(ACTION_NO_SORCERERS, NULL, 0);
+                                summonsGenerator.DoAction(ACTION_NO_SORCERERS, NULL, 0);
                                 me->SetWalk(false);
                             }
                         }
@@ -233,7 +233,7 @@ class boss_shade_of_akama : public CreatureScript
                             me->GetVictim()->InterruptNonMeleeSpells(false);
                             me->GetThreatManager().AddThreat(me->GetVictim(), 1000000.0f);
                             me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC|UNIT_FLAG_IMMUNE_TO_NPC|UNIT_FLAG_NOT_SELECTABLE);
-                            //summonsGenerator.DoAction(ACTION_STOP_SPAWNING, NULL, 0);
+                            summonsGenerator.DoAction(ACTION_STOP_SPAWNING, NULL, 0);
                             break;
                         }
                         events.ScheduleEvent(EVENT_SHADE_CHECK_DISTANCE, 1000);

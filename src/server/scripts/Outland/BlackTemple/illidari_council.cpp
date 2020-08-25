@@ -87,7 +87,6 @@ enum Misc
     EVENT_KILL_TALK                        = 100
 };
 
-/* // @todo
 struct TC_GAME_API HammerOfJusticeSelector : public std::unary_function<Unit*, bool>
 {
     Unit const* _me;
@@ -98,7 +97,6 @@ struct TC_GAME_API HammerOfJusticeSelector : public std::unary_function<Unit*, b
         return target && target->GetTypeId() == TYPEID_PLAYER && _me->IsInRange(target, 10.0f, 40.0f, true);
     }
 };
-*/
 
 class VerasEnvenom : public BasicEvent
 {
@@ -542,7 +540,7 @@ class boss_veras_darkshadow : public CreatureScript
                         me->CastSpell(me, SPELL_VANISH_OUT, false);
                         break;
                     case EVENT_SPELL_ENRAGE:
-                        // DoResetThreat(); // @todo ?
+                        DoResetThreat();
                         if (Creature* council = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_ILLIDARI_COUNCIL)))
                             council->GetAI()->DoAction(ACTION_ENRAGE);
                         break;
@@ -581,7 +579,6 @@ class spell_illidari_council_balance_of_power : public SpellScriptLoader
         }
 };
 
-/*
 class spell_illidari_council_empyreal_balance : public SpellScriptLoader
 {
     public:
@@ -645,41 +642,6 @@ class spell_illidari_council_empyreal_balance : public SpellScriptLoader
             return new spell_illidari_council_empyreal_balance_SpellScript();
         }
 };
-*/
-
-
-// 41499 - Empyreal Balance
-class spell_illidari_council_empyreal_balance : public SpellScriptLoader
-{
-public:
-    spell_illidari_council_empyreal_balance() : SpellScriptLoader("spell_illidari_council_empyreal_balance") { }
-
-    class spell_illidari_council_empyreal_balance_SpellScript : public SpellScript
-    {
-        PrepareSpellScript(spell_illidari_council_empyreal_balance_SpellScript);
-
-        bool Validate(SpellInfo const* /*spellInfo*/) override
-        {
-            return ValidateSpellInfo({ SPELL_EMPYREAL_BALANCE });
-        }
-
-        void HandleDummy(SpellEffIndex /*effIndex*/)
-        {
-            Unit* target = GetHitUnit();
-            target->CastSpell(target, SPELL_EMPYREAL_BALANCE, true);
-        }
-
-        void Register() override
-        {
-            //OnEffectHitTarget += SpellEffectFn(spell_illidari_council_empyreal_balance_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
-        }
-    };
-
-    SpellScript* GetSpellScript() const override
-    {
-        return new spell_illidari_council_empyreal_balance_SpellScript();
-    }
-};
 
 class spell_illidari_council_reflective_shield : public SpellScriptLoader
 {
@@ -737,7 +699,7 @@ class spell_illidari_council_judgement : public SpellScriptLoader
 
             void Register()
             {
-                // OnEffectHitTarget += SpellEffectFn(spell_illidari_council_judgement_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_illidari_council_judgement_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 

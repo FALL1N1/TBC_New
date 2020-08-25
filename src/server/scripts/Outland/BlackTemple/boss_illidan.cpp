@@ -1009,7 +1009,7 @@ class spell_illidan_draw_soul : public SpellScriptLoader
 
             void Register()
             {
-                //OnEffectHitTarget += SpellEffectFn(spell_illidan_draw_soul_SpellScript::HandleScriptEffect, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_illidan_draw_soul_SpellScript::HandleScriptEffect, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 
@@ -1085,7 +1085,7 @@ class spell_illidan_parasitic_shadowfiend_trigger : public SpellScriptLoader
 
             void Register()
             {
-                //OnEffectHitTarget += SpellEffectFn(spell_illidan_parasitic_shadowfiend_trigger_SpellScript::HandleScriptEffect, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_illidan_parasitic_shadowfiend_trigger_SpellScript::HandleScriptEffect, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 
@@ -1113,7 +1113,7 @@ class spell_illidan_glaive_throw : public SpellScriptLoader
 
             void Register()
             {
-                //OnEffectHitTarget += SpellEffectFn(spell_illidan_glaive_throw_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+                OnEffectHitTarget += SpellEffectFn(spell_illidan_glaive_throw_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
             }
         };
 
@@ -1178,12 +1178,12 @@ class spell_illidan_shadow_prison : public SpellScriptLoader
 
             void FilterTargets(std::list<WorldObject*>& targets)
             {
-                //targets.remove_if(PlayerOrPetCheck());
+                targets.remove_if(PlayerOrPetCheck());
             }
 
             void Register()
             {
-                //OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_illidan_shadow_prison_SpellScript::FilterTargets, EFFECT_ALL, TARGET_UNIT_SRC_AREA_ENEMY);
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_illidan_shadow_prison_SpellScript::FilterTargets, EFFECT_ALL, TARGET_UNIT_SRC_AREA_ENEMY);
             }
         };
 
@@ -1294,7 +1294,7 @@ class spell_illidan_flame_burst : public SpellScriptLoader
 
             void Register()
             {
-                //OnEffectHitTarget += SpellEffectFn(spell_illidan_flame_burst_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_illidan_flame_burst_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 
@@ -1326,7 +1326,7 @@ class spell_illidan_found_target : public SpellScriptLoader
 
             void Register()
             {
-                //OnEffectHitTarget += SpellEffectFn(spell_illidan_found_target_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+                OnEffectHitTarget += SpellEffectFn(spell_illidan_found_target_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
             }
         };
 
@@ -1366,7 +1366,7 @@ class spell_illidan_cage_trap : public SpellScriptLoader
 
             void Register()
             {
-                //OnEffectHitTarget += SpellEffectFn(spell_illidan_cage_trap_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_illidan_cage_trap_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 

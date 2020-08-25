@@ -246,7 +246,6 @@ class spell_mother_shahraz_saber_lash : public SpellScriptLoader
         }
 };
 
-/*
 class spell_mother_shahraz_fatal_attraction : public SpellScriptLoader
 {
     public:
@@ -294,44 +293,6 @@ class spell_mother_shahraz_fatal_attraction : public SpellScriptLoader
             return new spell_mother_shahraz_fatal_attraction_SpellScript();
         }
 };
-*/
-
-// 40869 - Fatal Attraction
-class spell_mother_shahraz_fatal_attraction : public SpellScript
-{
-    PrepareSpellScript(spell_mother_shahraz_fatal_attraction);
-
-    bool Validate(SpellInfo const* /*spell*/) override
-    {
-        return ValidateSpellInfo(
-            {
-                SPELL_SABER_LASH_IMMUNITY,
-                SPELL_FATAL_ATTRACTION
-            });
-    }
-
-    void FilterTargets(std::list<WorldObject*>& targets)
-    {
-        targets.remove_if(Trinity::UnitAuraCheck(true, SPELL_SABER_LASH_IMMUNITY));
-    }
-
-    void SetDest(SpellDestination& dest)
-    {
-        dest.Relocate(GetCaster()->GetRandomNearPosition(50.0f));
-    }
-
-    void HandleTeleport(SpellEffIndex /*effIndex*/)
-    {
-        GetCaster()->CastSpell(GetHitUnit(), SPELL_FATAL_ATTRACTION, true);
-    }
-
-    void Register() override
-    {
-        //OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_mother_shahraz_fatal_attraction::FilterTargets, EFFECT_ALL, TARGET_UNIT_SRC_AREA_ENEMY);
-        //OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_mother_shahraz_fatal_attraction::SetDest, EFFECT_1, TARGET_DEST_CASTER_RANDOM);
-        //OnEffectHitTarget += SpellEffectFn(spell_mother_shahraz_fatal_attraction::HandleTeleport, EFFECT_1, SPELL_EFFECT_TELEPORT_UNITS);
-    }
-};
 
 
 class spell_mother_shahraz_fatal_attraction_dummy : public SpellScriptLoader
@@ -355,7 +316,7 @@ class spell_mother_shahraz_fatal_attraction_dummy : public SpellScriptLoader
 
             void Register()
             {
-                // OnEffectHitTarget += SpellEffectFn(spell_mother_shahraz_fatal_attraction_dummy_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+                OnEffectHitTarget += SpellEffectFn(spell_mother_shahraz_fatal_attraction_dummy_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
             }
         };
 

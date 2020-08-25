@@ -37,7 +37,7 @@ class instance_black_temple : public InstanceMapScript
             instance_black_temple_InstanceMapScript(Map* map) : InstanceScript(map)
             {
                 SetBossNumber(MAX_ENCOUNTERS);
-                //LoadDoorData(doorData); // @todo
+                LoadDoorData(doorData);
 
                 ShadeOfAkamaGUID.Clear();
                 AkamaShadeGUID.Clear();

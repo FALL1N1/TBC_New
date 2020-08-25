@@ -51,7 +51,6 @@ enum Misc
     EVENT_TALK_KILL                    = 10
 };
 
-/*
 struct ShadowOfDeathSelector : public std::unary_function<Unit*, bool>
 {
     bool operator()(Unit const* target) const
@@ -59,7 +58,6 @@ struct ShadowOfDeathSelector : public std::unary_function<Unit*, bool>
         return target && !target->HasAura(SPELL_SHADOW_OF_DEATH) && !target->HasAura(SPELL_POSSESS_SPIRIT_IMMUNE);
     }
 };
-*/
 
 class boss_teron_gorefiend : public CreatureScript
 {
@@ -162,8 +160,8 @@ class boss_teron_gorefiend : public CreatureScript
                         events.ScheduleEvent(EVENT_SPELL_CRUSHING_SHADOWS, 15000);
                         break;
                     case EVENT_SPELL_SHADOW_OF_DEATH:
-                        //if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, ShadowOfDeathSelector()))
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM))
+                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, ShadowOfDeathSelector()))
+                        //if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM))
                             me->CastSpell(target, SPELL_SHADOW_OF_DEATH, false);
                         events.ScheduleEvent(EVENT_SPELL_SHADOW_OF_DEATH, 30000);
                         break;
@@ -300,11 +298,9 @@ class spell_teron_gorefiend_shadowy_construct : public SpellScriptLoader
             void HandleEffectApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
             {
                 GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_SCHOOL, SPELL_SCHOOL_MASK_NORMAL, true);
-
-                // @todo
-                //GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_LANCE, true);
-                //GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_CHAINS, true);
-                //GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_VOLLEY, true);
+                GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_LANCE, true);
+                GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_CHAINS, true);
+                GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_VOLLEY, true);
 
                 GetUnitOwner()->ToCreature()->SetInCombatWithZone();
                 Map::PlayerList const& playerList = GetUnitOwner()->GetMap()->GetPlayers();
