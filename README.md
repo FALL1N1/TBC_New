@@ -6,49 +6,84 @@ Any PRs are welcome.
 
 Current progress:
 
+
 > Arenas
+
 [ ] Ring of Trials
+
 [ ] Circle of Blood
+
 [ ] Ruins of Lordaeron
+
 
 > Battlegrounds 
 
 [ ] Warsong Gulch
+
 [ ] Arathi Basin
+
 [ ] Alterac Valley
+
 [ ] Eye of the Storm
 
 
 > Dungeons
 
+
 [ ] Hellfire Ramparts	
+
 [ ] Blood Furnace
+
 [ ] Slave Pens	
+
 [ ] Underbog	
+
 [ ] Mana-Tombs	
+
 [ ] Auchenai Crypts	
+
 [ ] Escape from Durnholde Keep	
+
 [ ] Sethekk Halls	
+
 [ ] Shadow Labyrinth	
+
 [ ] Shattered Halls	
+
 [ ] The Botanica	
+
 [ ] The Mechanar	
+
 [ ] The Steamvault	
+
 [ ] Magisters' Terrace	 
+
 [ ] Opening of the Dark Portal	
+
 [ ] The Arcatraz	  
+
 
 > Raids
 
+
 [ ] Karazhan
+
 [ ] Gruul's Lair
+
 [ ] Magtheridon's Lair
+
 [ ] Zul'Aman
+
 [ ] Serpentshrine Cavern
+
 [ ] Tempest Keep: The Eye
+
 [ ] Battle for Mount Hyjal
-[x] Black Templ
+
+[x] Black Temple
+
 [x] Sunwell Plateau
+
 
 
 # Sunstrider-related
