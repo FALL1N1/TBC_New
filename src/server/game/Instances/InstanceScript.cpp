@@ -162,12 +162,15 @@ void InstanceScript::LoadMinionData(std::vector<MinionData> const datas)
     TC_LOG_DEBUG("scripts", "InstanceScript::LoadMinionData: " UI64FMTD " minions loaded.", uint64(minions.size()));
 }
 
-void InstanceScript::LoadDoorData(std::vector<DoorData> const datas)
+void InstanceScript::LoadDoorData(const DoorData* data)
 {
-    for(auto data : datas)
-        if (data.bossId < bosses.size())
-            doors.insert(std::make_pair(data.entry, DoorInfo(&bosses[data.bossId], data.type)));
+    while (data->entry)
+    {
+        if (data->bossId < bosses.size())
+            doors.insert(std::make_pair(data->entry, DoorInfo(&bosses[data->bossId], data->type)));
 
+        ++data;
+    }
     TC_LOG_DEBUG("scripts", "InstanceScript::LoadDoorData: " UI64FMTD " doors loaded.", uint64(doors.size()));
 }
 
