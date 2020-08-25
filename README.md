@@ -4,6 +4,8 @@ This fork's focus is mainly to port back the removed scripts and eventually do m
 If you have played TBC and you know how stuff works - feel free to give it a test and update us with bugs.
 Any PRs are welcome.
 
+Copyright goes to appropriate authors, e.g Sunwell, Sunstrider, Trinity and so on..
+
 Current progress:
 
 
