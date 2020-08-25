@@ -1,6 +1,13 @@
+
 #ifndef BLACK_TEMPLE_H_
 #define BLACK_TEMPLE_H_
 
+#include "CreatureAIImpl.h"
+
+#define BTScriptName "instance_black_temple"
+#define DataHeader   "BT"
+
+uint32 const EncounterCount = 9;
 
 enum DataTypes
 {
@@ -72,5 +79,14 @@ enum MiscIds
 
     FACTION_ASHTONGUE                = 1820
 };
+
+
+template <class AI, class T>
+inline AI* GetBlackTempleAI(T* obj)
+{
+    return GetInstanceAI<AI>(obj, BTScriptName);
+}
+
+#define RegisterBlackTempleCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetBlackTempleAI)
 
 #endif // BLACK_TEMPLE_H_

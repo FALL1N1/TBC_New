@@ -1,6 +1,11 @@
-#include "ScriptMgr.h"
+#include "CellImpl.h"
+#include "GridNotifiersImpl.h"
+#include "InstanceScript.h" 
 #include "ScriptedCreature.h"
-#include "black_temple.h"
+#include "ScriptMgr.h"
+#include "SpellAuraEffects.h"
+#include "SpellScript.h"
+#include "black_temple.h" 
 
 enum Says
 {
@@ -82,7 +87,8 @@ enum Misc
     EVENT_KILL_TALK                        = 100
 };
 
-struct HammerOfJusticeSelector : public std::unary_function<Unit*, bool>
+/* // @todo
+struct TC_GAME_API HammerOfJusticeSelector : public std::unary_function<Unit*, bool>
 {
     Unit const* _me;
     HammerOfJusticeSelector(Unit* me) : _me(me) { }
@@ -92,11 +98,12 @@ struct HammerOfJusticeSelector : public std::unary_function<Unit*, bool>
         return target && target->GetTypeId() == TYPEID_PLAYER && _me->IsInRange(target, 10.0f, 40.0f, true);
     }
 };
+*/
 
 class VerasEnvenom : public BasicEvent
 {
     public:
-        VerasEnvenom(Unit& owner, uint64 targetGUID) : _owner(owner), _targetGUID(targetGUID) { }
+        VerasEnvenom(Unit& owner, ObjectGuid targetGUID) : _owner(owner), _targetGUID(targetGUID) { }
 
         bool Execute(uint64 /*eventTime*/, uint32 /*updateTime*/)
         {
@@ -112,7 +119,7 @@ class VerasEnvenom : public BasicEvent
 
     private:
         Unit& _owner;
-        uint64 _targetGUID;
+        ObjectGuid _targetGUID;
 };
 
 class boss_illidari_council : public CreatureScript
@@ -122,7 +129,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const
     {
-        return GetInstanceAI<boss_illidari_councilAI>(creature);
+        return GetBlackTempleAI<boss_illidari_councilAI>(creature);
     }
 
     struct boss_illidari_councilAI : public BossAI
@@ -132,7 +139,7 @@ public:
             memset(councilGUIDs, 0, sizeof(councilGUIDs));
         }
 
-        uint64 councilGUIDs[4];
+        ObjectGuid councilGUIDs[4];
 
         void Reset()
         {
@@ -150,11 +157,11 @@ public:
         {
             if (!me->isActiveObject() && param == ACTION_START_ENCOUNTER)
             {
-                me->setActive(true);
-                councilGUIDs[0] = instance->GetData64(NPC_GATHIOS_THE_SHATTERER);
-                councilGUIDs[1] = instance->GetData64(NPC_HIGH_NETHERMANCER_ZEREVOR);
-                councilGUIDs[2] = instance->GetData64(NPC_LADY_MALANDE);
-                councilGUIDs[3] = instance->GetData64(NPC_VERAS_DARKSHADOW);
+                me->SetKeepActive(true);
+                councilGUIDs[0] = instance->GetGuidData(NPC_GATHIOS_THE_SHATTERER);
+                councilGUIDs[1] = instance->GetGuidData(NPC_HIGH_NETHERMANCER_ZEREVOR);
+                councilGUIDs[2] = instance->GetGuidData(NPC_LADY_MALANDE);
+                councilGUIDs[3] = instance->GetGuidData(NPC_VERAS_DARKSHADOW);
 
                 bool spoken = false;
                 for (uint8 i = 0; i < 4; ++i)
@@ -180,7 +187,7 @@ public:
             }
             else if (param == ACTION_END_ENCOUNTER)
             {
-                me->setActive(false);
+                me->SetKeepActive(false);
                 Creature* member = NULL;
                 for (uint8 i = 0; i < 4; ++i)
                     if (member = ObjectAccessor::GetCreature(*me, councilGUIDs[i]))
@@ -221,9 +228,9 @@ struct boss_illidari_council_memberAI : public ScriptedAI
         events.Reset();
     }
 
-    void EnterEvadeMode()
+    void EnterEvadeMode(EvadeReason /*why*/) override
     {
-        me->SetOwnerGUID(0);
+        me->SetOwnerGUID(ObjectGuid::Empty);
         ScriptedAI::EnterEvadeMode();
     }
 
@@ -248,13 +255,13 @@ struct boss_illidari_council_memberAI : public ScriptedAI
     void JustDied(Unit*)
     {
         Talk(SAY_COUNCIL_DEATH);
-        if (Creature* council = ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_ILLIDARI_COUNCIL)))
+        if (Creature* council = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_ILLIDARI_COUNCIL)))
             council->GetAI()->DoAction(ACTION_END_ENCOUNTER);
     }
 
     void EnterCombat(Unit* who)
     {
-        if (Creature* council = ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_ILLIDARI_COUNCIL)))
+        if (Creature* council = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_ILLIDARI_COUNCIL)))
             council->GetAI()->DoAction(ACTION_START_ENCOUNTER);
     }
 };
@@ -266,7 +273,7 @@ class boss_gathios_the_shatterer : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return GetInstanceAI<boss_gathios_the_shattererAI>(creature);
+            return GetBlackTempleAI<boss_gathios_the_shattererAI>(creature);
         }
 
         struct boss_gathios_the_shattererAI : public boss_illidari_council_memberAI
@@ -276,14 +283,14 @@ class boss_gathios_the_shatterer : public CreatureScript
             Creature* SelectCouncilMember()
             {
                 if (roll_chance_i(50))
-                    return ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_LADY_MALANDE));
+                    return ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_LADY_MALANDE));
 
                 if (roll_chance_i(20))
-                    if (Creature* veras = ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_VERAS_DARKSHADOW)))
+                    if (Creature* veras = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_VERAS_DARKSHADOW)))
                         if (!veras->HasAura(SPELL_VANISH))
                             return veras;
 
-                return ObjectAccessor::GetCreature(*me, instance->GetData64(RAND(NPC_GATHIOS_THE_SHATTERER, NPC_HIGH_NETHERMANCER_ZEREVOR)));
+                return ObjectAccessor::GetCreature(*me, instance->GetGuidData(RAND(NPC_GATHIOS_THE_SHATTERER, NPC_HIGH_NETHERMANCER_ZEREVOR)));
             }
 
             void EnterCombat(Unit* who)
@@ -324,7 +331,8 @@ class boss_gathios_the_shatterer : public CreatureScript
                         events.ScheduleEvent(EVENT_SPELL_AURA, 30000);
                         break;
                     case EVENT_SPELL_HAMMER_OF_JUSTICE:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, HammerOfJusticeSelector(me)))
+                        //if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, HammerOfJusticeSelector(me)))
+                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM))
                         {
                             me->CastSpell(target, SPELL_HAMMER_OF_JUSTICE, false);
                             events.ScheduleEvent(EVENT_SPELL_HAMMER_OF_JUSTICE, 20000);
@@ -354,7 +362,7 @@ class boss_high_nethermancer_zerevor : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return GetInstanceAI<boss_high_nethermancer_zerevorAI>(creature);
+            return GetBlackTempleAI<boss_high_nethermancer_zerevorAI>(creature);
         }
 
         struct boss_high_nethermancer_zerevorAI : public boss_illidari_council_memberAI
@@ -427,7 +435,7 @@ class boss_lady_malande : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return GetInstanceAI<boss_lady_malandeAI>(creature);
+            return GetBlackTempleAI<boss_lady_malandeAI>(creature);
         }
 
         struct boss_lady_malandeAI : public boss_illidari_council_memberAI
@@ -491,7 +499,7 @@ class boss_veras_darkshadow : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return GetInstanceAI<boss_veras_darkshadowAI>(creature);
+            return GetBlackTempleAI<boss_veras_darkshadowAI>(creature);
         }
 
         struct boss_veras_darkshadowAI : public boss_illidari_council_memberAI
@@ -534,8 +542,8 @@ class boss_veras_darkshadow : public CreatureScript
                         me->CastSpell(me, SPELL_VANISH_OUT, false);
                         break;
                     case EVENT_SPELL_ENRAGE:
-                        DoResetThreat();
-                        if (Creature* council = ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_ILLIDARI_COUNCIL)))
+                        // DoResetThreat(); // @todo ?
+                        if (Creature* council = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_ILLIDARI_COUNCIL)))
                             council->GetAI()->DoAction(ACTION_ENRAGE);
                         break;
                 }
@@ -573,6 +581,7 @@ class spell_illidari_council_balance_of_power : public SpellScriptLoader
         }
 };
 
+/*
 class spell_illidari_council_empyreal_balance : public SpellScriptLoader
 {
     public:
@@ -612,7 +621,7 @@ class spell_illidari_council_empyreal_balance : public SpellScriptLoader
                 float pct = (_sharedHealth / _sharedHealthMax) * 100.0f;
                 std::list<Spell::TargetInfo> const* targetsInfo = GetSpell()->GetUniqueTargetInfo();
                 for (std::list<Spell::TargetInfo>::const_iterator ihit = targetsInfo->begin(); ihit != targetsInfo->end(); ++ihit)
-                    if (Creature* target = ObjectAccessor::GetCreature(*GetCaster(), ihit->targetGUID))
+                    if (Creature* target = ObjectAccessor::GetCreature(*GetCaster(), ihit->TargetGUID))
                     {
                         target->LowerPlayerDamageReq(target->GetMaxHealth());
                         target->SetHealth(CalculatePct(target->GetMaxHealth(), pct));
@@ -635,6 +644,41 @@ class spell_illidari_council_empyreal_balance : public SpellScriptLoader
         {
             return new spell_illidari_council_empyreal_balance_SpellScript();
         }
+};
+*/
+
+
+// 41499 - Empyreal Balance
+class spell_illidari_council_empyreal_balance : public SpellScriptLoader
+{
+public:
+    spell_illidari_council_empyreal_balance() : SpellScriptLoader("spell_illidari_council_empyreal_balance") { }
+
+    class spell_illidari_council_empyreal_balance_SpellScript : public SpellScript
+    {
+        PrepareSpellScript(spell_illidari_council_empyreal_balance_SpellScript);
+
+        bool Validate(SpellInfo const* /*spellInfo*/) override
+        {
+            return ValidateSpellInfo({ SPELL_EMPYREAL_BALANCE });
+        }
+
+        void HandleDummy(SpellEffIndex /*effIndex*/)
+        {
+            Unit* target = GetHitUnit();
+            target->CastSpell(target, SPELL_EMPYREAL_BALANCE, true);
+        }
+
+        void Register() override
+        {
+            //OnEffectHitTarget += SpellEffectFn(spell_illidari_council_empyreal_balance_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+        }
+    };
+
+    SpellScript* GetSpellScript() const override
+    {
+        return new spell_illidari_council_empyreal_balance_SpellScript();
+    }
 };
 
 class spell_illidari_council_reflective_shield : public SpellScriptLoader
@@ -693,7 +737,7 @@ class spell_illidari_council_judgement : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_illidari_council_judgement_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                // OnEffectHitTarget += SpellEffectFn(spell_illidari_council_judgement_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 

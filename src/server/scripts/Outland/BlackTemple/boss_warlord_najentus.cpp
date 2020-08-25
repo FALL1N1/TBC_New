@@ -1,6 +1,13 @@
 #include "ScriptMgr.h"
-#include "ScriptedCreature.h"
 #include "black_temple.h"
+#include "GameObjectAI.h"
+#include "GridNotifiers.h"
+#include "InstanceScript.h"
+#include "ObjectAccessor.h"
+#include "Player.h"
+#include "ScriptedCreature.h"
+#include "SpellInfo.h"
+#include "SpellScript.h"
 
 enum Yells
 {
@@ -40,7 +47,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const
     {
-        return GetInstanceAI<boss_najentusAI>(creature);
+        return GetBlackTempleAI<boss_najentusAI>(creature);
     }
 
     struct boss_najentusAI : public BossAI
@@ -69,9 +76,9 @@ public:
             Talk(SAY_DEATH);
         }
 
-        void EnterCombat(Unit* who)
+        void JustEngagedWith(Unit* who) override
         {
-            BossAI::EnterCombat(who);
+            BossAI::JustEngagedWith(who);
             Talk(SAY_AGGRO);
             events.ScheduleEvent(EVENT_SPELL_BERSERK, 480000);
             events.ScheduleEvent(EVENT_YELL, urand(25000, 100000));
@@ -141,7 +148,7 @@ class spell_najentus_needle_spine : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_najentus_needle_spine_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+                //OnEffectHitTarget += SpellEffectFn(spell_najentus_needle_spine_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
             }
         };
 
@@ -172,7 +179,7 @@ class spell_najentus_hurl_spine : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_najentus_hurl_spine_SpellScript::HandleSchoolDamage, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
+                //OnEffectHitTarget += SpellEffectFn(spell_najentus_hurl_spine_SpellScript::HandleSchoolDamage, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
             }
         };
 

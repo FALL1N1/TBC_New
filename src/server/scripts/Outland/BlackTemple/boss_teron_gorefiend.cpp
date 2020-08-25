@@ -1,6 +1,12 @@
 #include "ScriptMgr.h"
-#include "ScriptedCreature.h"
 #include "black_temple.h"
+#include "InstanceScript.h"
+#include "MotionMaster.h"
+#include "ObjectAccessor.h" 
+#include "Player.h"
+#include "ScriptedCreature.h"
+#include "SpellAuraEffects.h"
+#include "SpellScript.h"
 
 enum Says
 {
@@ -45,6 +51,7 @@ enum Misc
     EVENT_TALK_KILL                    = 10
 };
 
+/*
 struct ShadowOfDeathSelector : public std::unary_function<Unit*, bool>
 {
     bool operator()(Unit const* target) const
@@ -52,6 +59,7 @@ struct ShadowOfDeathSelector : public std::unary_function<Unit*, bool>
         return target && !target->HasAura(SPELL_SHADOW_OF_DEATH) && !target->HasAura(SPELL_POSSESS_SPIRIT_IMMUNE);
     }
 };
+*/
 
 class boss_teron_gorefiend : public CreatureScript
 {
@@ -60,7 +68,7 @@ class boss_teron_gorefiend : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return GetInstanceAI<boss_teron_gorefiendAI>(creature);
+            return GetBlackTempleAI<boss_teron_gorefiendAI>(creature);
         }
 
         struct boss_teron_gorefiendAI : public BossAI
@@ -78,7 +86,7 @@ class boss_teron_gorefiend : public CreatureScript
                 me->CastSpell(me, SPELL_SHADOW_OF_DEATH_REMOVE, true);
             }
 
-            void SetData(uint32 type, uint32 id)
+            void SetData(uint32 type, uint32 id, Unit* /*who*/) override
             {
                 if (type || !me->IsAlive())
                     return;
@@ -90,9 +98,9 @@ class boss_teron_gorefiend : public CreatureScript
                 }
             }
 
-            void EnterCombat(Unit* who)
+            void JustEngagedWith(Unit* who) override
             {
-                BossAI::EnterCombat(who);
+                BossAI::JustEngagedWith(who);
                 events.ScheduleEvent(EVENT_SPELL_INCINERATE, 24000);
                 events.ScheduleEvent(EVENT_SPELL_DOOM_BLOSSOM, 10000);
                 events.ScheduleEvent(EVENT_SPELL_CRUSHING_SHADOWS, 17000);
@@ -154,7 +162,8 @@ class boss_teron_gorefiend : public CreatureScript
                         events.ScheduleEvent(EVENT_SPELL_CRUSHING_SHADOWS, 15000);
                         break;
                     case EVENT_SPELL_SHADOW_OF_DEATH:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, ShadowOfDeathSelector()))
+                        //if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, ShadowOfDeathSelector()))
+                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM))
                             me->CastSpell(target, SPELL_SHADOW_OF_DEATH, false);
                         events.ScheduleEvent(EVENT_SPELL_SHADOW_OF_DEATH, 30000);
                         break;
@@ -291,17 +300,19 @@ class spell_teron_gorefiend_shadowy_construct : public SpellScriptLoader
             void HandleEffectApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
             {
                 GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_SCHOOL, SPELL_SCHOOL_MASK_NORMAL, true);
-                GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_LANCE, true);
-                GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_CHAINS, true);
-                GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_VOLLEY, true);
+
+                // @todo
+                //GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_LANCE, true);
+                //GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_CHAINS, true);
+                //GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_VOLLEY, true);
 
                 GetUnitOwner()->ToCreature()->SetInCombatWithZone();
                 Map::PlayerList const& playerList = GetUnitOwner()->GetMap()->GetPlayers();
                 for (Map::PlayerList::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
                     if (Player* player = i->GetSource())
                     {
-                        if (GetUnitOwner()->IsValidAttackTarget(player))
-                            GetUnitOwner()->AddThreat(player, 1000000.0f);
+                        if (GetUnitOwner()->IsValidAttackTarget(player)) 
+                            GetUnitOwner()->GetThreatManager().AddThreat(player, 1000000.0f);
                     }
 
                 GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_BRIEF_STUN, true);

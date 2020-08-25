@@ -2768,6 +2768,44 @@ void Creature::SendZoneUnderAttackMessage(Player* attacker)
     sWorld->SendZoneUnderAttack(GetZoneId(), (enemy_team==ALLIANCE ? HORDE : ALLIANCE));
 }
 
+void Creature::SetInCombatWithZone()
+{ 
+    if (!CanHaveThreatList())
+    {
+        sLog->outError("Creature entry %u call SetInCombatWithZone but creature cannot have threat list.", GetEntry());
+        return;
+    }
+
+    Map* map = GetMap();
+
+    if (!map->IsDungeon())
+    {
+        sLog->outError("Creature entry %u call SetInCombatWithZone for map (id: %u) that isn't an instance.", GetEntry(), map->GetId());
+        return;
+    }
+
+    Map::PlayerList const &PlList = map->GetPlayers();
+
+    if (PlList.isEmpty())
+        return;
+
+    for (Map::PlayerList::const_iterator i = PlList.begin(); i != PlList.end(); ++i)
+    {
+        if (Player* player = i->GetSource())
+        {
+            if (player->IsGameMaster())
+                continue;
+
+            if (player->IsAlive())
+            {
+                this->SetInCombatWith(player);
+                player->SetInCombatWith(this);
+                AddThreat(player, 0.0f);
+            }
+        }
+    }
+}
+
 bool Creature::HasSpell(uint32 spellID) const
 {
     return std::find(std::begin(m_spells), std::end(m_spells), spellID) != std::end(m_spells);

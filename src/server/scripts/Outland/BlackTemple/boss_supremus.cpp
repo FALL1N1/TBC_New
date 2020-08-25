@@ -1,6 +1,8 @@
 #include "ScriptMgr.h"
-#include "ScriptedCreature.h"
 #include "black_temple.h"
+#include "MotionMaster.h"
+#include "ObjectAccessor.h" 
+#include "ScriptedCreature.h"
 
 enum Supremus
 {
@@ -36,7 +38,7 @@ class boss_supremus : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return GetInstanceAI<boss_supremusAI>(creature);
+            return GetBlackTempleAI<boss_supremusAI>(creature);
         }
 
         struct boss_supremusAI : public BossAI
@@ -50,9 +52,9 @@ class boss_supremus : public CreatureScript
                 BossAI::Reset();
             }
 
-            void EnterCombat(Unit* who)
+            void JustEngagedWith(Unit* who) override
             {
-                BossAI::EnterCombat(who);
+                BossAI::JustEngagedWith(who);
 
                 SchedulePhase(false);
                 events.ScheduleEvent(EVENT_SPELL_BERSERK, 900000);
@@ -63,7 +65,7 @@ class boss_supremus : public CreatureScript
             {
                 events.CancelEventGroup(EVENT_GROUP_ABILITIES);
                 events.ScheduleEvent(EVENT_SWITCH_PHASE, 60000);
-                DoResetThreat();
+                //DoResetThreat();
 
                 if (!run)
                 {
@@ -95,7 +97,8 @@ class boss_supremus : public CreatureScript
                 {
                     summon->ToTempSummon()->InitStats(20000);
                     if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
-                        summon->GetMotionMaster()->MoveFollow(target, 0.0f, 0.0f, MOTION_SLOT_CONTROLLED);
+                        summon->GetMotionMaster()->MoveFollow(target, 0.0f, 0.0f, MOTION_SLOT_ACTIVE);
+                        //summon->GetMotionMaster()->MoveFollow(target, 0.0f, 0.0f, MOTION_SLOT_CONTROLLED);
                 }
                 else
                     summon->CastSpell(summon, SPELL_VOLCANIC_ERUPTION_TRIGGER, true);
@@ -106,6 +109,7 @@ class boss_supremus : public CreatureScript
                 summons.Despawn(summon);
             }
 
+            /*
             Unit* FindHatefulStrikeTarget()
             {
                 Unit* target = NULL;
@@ -120,6 +124,7 @@ class boss_supremus : public CreatureScript
 
                 return target;
             }
+            */
 
             void UpdateAI(uint32 diff)
             {
@@ -136,7 +141,8 @@ class boss_supremus : public CreatureScript
                         me->CastSpell(me, SPELL_BERSERK, true);
                         break;
                     case EVENT_SPELL_HATEFUL_STRIKE:
-                        if (Unit* target = FindHatefulStrikeTarget())
+                        //if (Unit* target = FindHatefulStrikeTarget())
+                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
                             me->CastSpell(target, SPELL_HATEFUL_STRIKE, false);
                         events.ScheduleEvent(EVENT_SPELL_HATEFUL_STRIKE, urand(1500, 3000), EVENT_GROUP_ABILITIES);
                         break;
@@ -150,8 +156,8 @@ class boss_supremus : public CreatureScript
                     case EVENT_SWITCH_TARGET:
                         if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
                         {
-                            DoResetThreat();
-                            me->AddThreat(target, 5000000.0f);
+                            //DoResetThreat();
+                            me->GetThreatManager().AddThreat(target, 5000000.0f);
                             Talk(EMOTE_NEW_TARGET);
                         }
                         events.ScheduleEvent(EVENT_SWITCH_TARGET, 10000, EVENT_GROUP_ABILITIES);

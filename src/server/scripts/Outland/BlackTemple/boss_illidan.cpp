@@ -1,7 +1,18 @@
 #include "ScriptMgr.h"
-#include "ScriptedCreature.h"
-#include "ScriptedEscortAI.h"
 #include "black_temple.h"
+#include "GridNotifiersImpl.h"
+#include "EscortAI.h"
+#include "InstanceScript.h"
+#include "Map.h"
+#include "MotionMaster.h"
+#include "ObjectAccessor.h" 
+#include "Player.h"
+#include "ScriptedCreature.h"
+#include "ScriptedGossip.h"
+#include "SpellAuraEffects.h"
+#include "SpellInfo.h"
+#include "SpellScript.h"
+#include "TemporarySummon.h"
 
 enum Says
 {
@@ -215,11 +226,11 @@ class boss_illidan_stormrage : public CreatureScript
                 beamPosId = urand(0, 3);
             }
 
-            void EnterEvadeMode()
+            void EnterEvadeMode(EvadeReason /*why*/) override
             {
                 BossAI::EnterEvadeMode();
 
-                if (Creature* akama = ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_AKAMA)))
+                if (Creature* akama = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_AKAMA)))
                     akama->AI()->EnterEvadeMode();
             }
 
@@ -278,7 +289,7 @@ class boss_illidan_stormrage : public CreatureScript
                         events.ScheduleEvent(EVENT_PHASE_2_EYE_BEAM, 15000, GROUP_PHASE_2_ABILITY);
                         events2.ScheduleEvent(EVENT_START_PHASE_2_END, 10000);
                     }
-                    me->SetFacingTo(me->GetAngle(676.02f, 305.45f));
+                    //me->SetFacingTo(me->GetAngle(676.02f, 305.45f));
                 }
                 else if (id == POINT_ILLIDAN_MIDDLE)
                 {
@@ -304,10 +315,10 @@ class boss_illidan_stormrage : public CreatureScript
                     events.ScheduleEvent(EVENT_SPELL_FRENZY, 40000);
             }
 
-            void EnterCombat(Unit* who)
+            void JustEngagedWith(Unit* who) override
             {
                 summons.DespawnAll();
-                BossAI::EnterCombat(who);
+                BossAI::JustEngagedWith(who);
                 ScheduleNormalEvents(1);
                 events.ScheduleEvent(EVENT_SPELL_BERSERK, 25*MINUTE*IN_MILLISECONDS);
                 events.ScheduleEvent(EVENT_SUMMON_MINIONS, 1000);
@@ -339,7 +350,7 @@ class boss_illidan_stormrage : public CreatureScript
                 }
             }
 
-            void DamageTaken(Unit*, uint32& damage, DamageEffectType, SpellSchoolMask)
+            void DamageTaken(Unit*, uint32& damage) override
             {
                 if (damage >= me->GetHealth())
                 {
@@ -391,7 +402,7 @@ class boss_illidan_stormrage : public CreatureScript
                 switch (events2.ExecuteEvent())
                 {
                     case EVENT_SUMMON_MINIONS2:
-                        if (Creature* akama = ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_AKAMA)))
+                        if (Creature* akama = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_AKAMA)))
                             akama->AI()->DoAction(ACTION_FIGHT_MINIONS);
                         break;
                     case EVENT_PHASE_2_EYE_BEAM_START:
@@ -404,8 +415,8 @@ class boss_illidan_stormrage : public CreatureScript
                         break;
                     case EVENT_START_PHASE_2_END:
                         summons.RemoveNotExisting();
-                        if (!summons.HasEntry(NPC_FLAME_OF_AZZINOTH))
-                        {
+                        if (!summons.GetCreatureWithEntry(NPC_FLAME_OF_AZZINOTH))
+                        { 
                             events.Reset();
                             events2.Reset();
                             me->InterruptNonMeleeSpells(false);
@@ -428,7 +439,7 @@ class boss_illidan_stormrage : public CreatureScript
                             maiev->AI()->Talk(SAY_MAIEV_SHADOWSONG_ILLIDAN3);
                         }
                         
-                        if (Creature* akama = ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_AKAMA)))
+                        if (Creature* akama = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_AKAMA)))
                         {
                             akama->AI()->DoAction(ACTION_ILLIDAN_DEAD);
                             akama->SetTarget(me->GetGUID());
@@ -551,7 +562,7 @@ class boss_illidan_stormrage : public CreatureScript
 
                             Talk(SAY_ILLIDAN_TAKEOFF);
                             me->SendMeleeAttackStop(me->GetVictim());
-                            me->SetTarget(0);
+                            me->SetTarget(ObjectGuid::Empty);
                             me->GetMotionMaster()->Clear();
                             me->StopMovingOnCurrentPos();
                             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
@@ -605,7 +616,7 @@ class boss_illidan_stormrage : public CreatureScript
                         me->SetDisableGravity(false);
                         break;
                     case EVENT_START_PHASE_3_LAND:
-                        me->getThreatManager().resetAllAggro();
+                        me->GetThreatManager().ResetAllThreat();
                         me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                         me->SetTarget(me->GetVictim()->GetGUID());
                         AttackStart(me->GetVictim());
@@ -618,7 +629,7 @@ class boss_illidan_stormrage : public CreatureScript
                     // ///////////////////////////
                     case EVENT_PHASE_4_START:
                         me->CastSpell(me, SPELL_DEMON_TRANSFORM_1, true);
-                        me->getThreatManager().resetAllAggro();
+                        me->GetThreatManager().ResetAllThreat();
                         me->GetMotionMaster()->MoveChase(me->GetVictim(), 35.0f);
                         events.Reset();
                         events.ScheduleEvent(EVENT_SPELL_SHADOW_BLAST, 11000);
@@ -641,9 +652,9 @@ class boss_illidan_stormrage : public CreatureScript
                         break;
                     case EVENT_REMOVE_DEMON_FORM:
                         me->CastSpell(me, SPELL_DEMON_TRANSFORM_1, true);
-                        me->getThreatManager().resetAllAggro();
+                        me->GetThreatManager().ResetAllThreat();
                         events.Reset();
-                        if (summons.HasEntry(NPC_MAIEV_SHADOWSONG))
+                        if (summons.GetCreatureWithEntry(NPC_MAIEV_SHADOWSONG))
                         {
                             ScheduleNormalEvents(5);
                             events.DelayEvents(11000);
@@ -693,7 +704,7 @@ class boss_illidan_stormrage : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return GetInstanceAI<boss_illidan_stormrageAI>(creature);
+            return GetBlackTempleAI<boss_illidan_stormrageAI>(creature);
         }
 };
 
@@ -745,9 +756,9 @@ class npc_akama_illidan : public CreatureScript
     public:
         npc_akama_illidan() : CreatureScript("npc_akama_illidan") { }
 
-        struct npc_akama_illidanAI : public npc_escortAI
+        struct npc_akama_illidanAI : public EscortAI
         {
-            npc_akama_illidanAI(Creature* creature) : npc_escortAI(creature), summons(me)
+            npc_akama_illidanAI(Creature* creature) : EscortAI(creature), summons(me)
             {
                 instance = creature->GetInstanceScript();
                 if (instance->GetBossState(DATA_AKAMA_FINISHED) == DONE)
@@ -781,17 +792,17 @@ class npc_akama_illidan : public CreatureScript
             {
                 me->SetReactState(REACT_AGGRESSIVE);
                 me->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
-                me->setActive(false);
+                me->SetKeepActive(false);
                 me->SetVisible(instance->GetBossState(DATA_ILLIDARI_COUNCIL) == DONE && instance->GetBossState(DATA_ILLIDAN_STORMRAGE) != DONE);
                 events.Reset();
                 summons.DespawnAll();
             }
 
             void sGossipSelect(Player* player, uint32 /*sender*/, uint32 action)
-            {
-                player->CLOSE_GOSSIP_MENU();
+            { 
+                CloseGossipMenuFor(player);
                 me->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
-                me->setActive(true);
+                me->SetKeepActive(true);
 
                 if (instance->GetBossState(DATA_AKAMA_FINISHED) != DONE)
                 {
@@ -822,14 +833,14 @@ class npc_akama_illidan : public CreatureScript
                 summon->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
                 if (summon->GetEntry() == NPC_ILLIDARI_ELITE)
                 {
-                    me->AddThreat(summon, 1000000.0f);
-                    summon->AddThreat(me, 1000000.0f);
+                    me->GetThreatManager().AddThreat(summon, 1000000.0f);
+                    summon->GetThreatManager().AddThreat(me, 1000000.0f);
                     summon->AI()->AttackStart(me);
                     AttackStart(summon);
                 }
             }
 
-            void WaypointReached(uint32 pointId)
+            void WaypointReached(uint32 pointId, uint32 /* nothing */) override
             {
                 if (pointId == POINT_DOORS)
                 {
@@ -849,14 +860,14 @@ class npc_akama_illidan : public CreatureScript
                 else if (pointId == POINT_ILLIDAN)
                 {
                     me->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
-                    me->setActive(false);
+                    me->SetKeepActive(false);
                     me->SetReactState(REACT_AGGRESSIVE);
                 }
             }
 
             void MoveInLineOfSight(Unit* /*who*/) { }
 
-            void DamageTaken(Unit*, uint32& damage, DamageEffectType, SpellSchoolMask)
+            void DamageTaken(Unit*, uint32& damage) override
             {
                 if (damage >= me->GetHealth())
                     damage = 0;
@@ -909,40 +920,40 @@ class npc_akama_illidan : public CreatureScript
                         SetEscortPaused(false);
                         break;
                     case EVENT_AKAMA_SCENE_20:
-                        if (Creature* illidan = ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_ILLIDAN_STORMRAGE)))
+                        if (Creature* illidan = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_ILLIDAN_STORMRAGE)))
                             illidan->SetStandState(UNIT_STAND_STATE_STAND);
                         break;
                     case EVENT_AKAMA_SCENE_21:
                         me->SetFacingTo(M_PI);
                         break;
                     case EVENT_AKAMA_SCENE_22:
-                        if (Creature* illidan = ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_ILLIDAN_STORMRAGE)))
+                        if (Creature* illidan = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_ILLIDAN_STORMRAGE)))
                             illidan->AI()->Talk(SAY_ILLIDAN_AKAMA1);
                         break;
                     case EVENT_AKAMA_SCENE_23:
                         Talk(SAY_AKAMA_ILLIDAN1);
                         break;
                     case EVENT_AKAMA_SCENE_24:
-                        if (Creature* illidan = ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_ILLIDAN_STORMRAGE)))
+                        if (Creature* illidan = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_ILLIDAN_STORMRAGE)))
                             illidan->AI()->Talk(SAY_ILLIDAN_AKAMA2);
                         break;
                     case EVENT_AKAMA_SCENE_25:
                         Talk(SAY_AKAMA_ILLIDAN2);
                         break;
                     case EVENT_AKAMA_SCENE_26:
-                        if (Creature* illidan = ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_ILLIDAN_STORMRAGE)))
+                        if (Creature* illidan = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_ILLIDAN_STORMRAGE)))
                             illidan->AI()->Talk(SAY_ILLIDAN_AKAMA3);
                         break;
                     case EVENT_AKAMA_SCENE_27:
-                        if (Creature* illidan = ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_ILLIDAN_STORMRAGE)))
+                        if (Creature* illidan = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_ILLIDAN_STORMRAGE)))
                             illidan->LoadEquipment(1, true);
                         break;
                     case EVENT_AKAMA_SCENE_28:
-                        if (Creature* illidan = ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_ILLIDAN_STORMRAGE)))
+                        if (Creature* illidan = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_ILLIDAN_STORMRAGE)))
                             illidan->HandleEmoteCommand(EMOTE_ONESHOT_TALK_NO_SHEATHE);
                         break;
                     case EVENT_AKAMA_SCENE_29:
-                        if (Creature* illidan = ObjectAccessor::GetCreature(*me, instance->GetData64(NPC_ILLIDAN_STORMRAGE)))
+                        if (Creature* illidan = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_ILLIDAN_STORMRAGE)))
                         {
                             illidan->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC|UNIT_FLAG_IMMUNE_TO_NPC);
                             illidan->SetInCombatWithZone();
@@ -976,7 +987,7 @@ class npc_akama_illidan : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return GetInstanceAI<npc_akama_illidanAI>(creature);
+            return GetBlackTempleAI<npc_akama_illidanAI>(creature);
         }
 };
 
@@ -998,7 +1009,7 @@ class spell_illidan_draw_soul : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_illidan_draw_soul_SpellScript::HandleScriptEffect, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
+                //OnEffectHitTarget += SpellEffectFn(spell_illidan_draw_soul_SpellScript::HandleScriptEffect, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 
@@ -1074,7 +1085,7 @@ class spell_illidan_parasitic_shadowfiend_trigger : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_illidan_parasitic_shadowfiend_trigger_SpellScript::HandleScriptEffect, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
+                //OnEffectHitTarget += SpellEffectFn(spell_illidan_parasitic_shadowfiend_trigger_SpellScript::HandleScriptEffect, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 
@@ -1102,7 +1113,7 @@ class spell_illidan_glaive_throw : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_illidan_glaive_throw_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+                //OnEffectHitTarget += SpellEffectFn(spell_illidan_glaive_throw_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
             }
         };
 
@@ -1167,12 +1178,12 @@ class spell_illidan_shadow_prison : public SpellScriptLoader
 
             void FilterTargets(std::list<WorldObject*>& targets)
             {
-                targets.remove_if(PlayerOrPetCheck());
+                //targets.remove_if(PlayerOrPetCheck());
             }
 
             void Register()
             {
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_illidan_shadow_prison_SpellScript::FilterTargets, EFFECT_ALL, TARGET_UNIT_SRC_AREA_ENEMY);
+                //OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_illidan_shadow_prison_SpellScript::FilterTargets, EFFECT_ALL, TARGET_UNIT_SRC_AREA_ENEMY);
             }
         };
 
@@ -1283,7 +1294,7 @@ class spell_illidan_flame_burst : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_illidan_flame_burst_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                //OnEffectHitTarget += SpellEffectFn(spell_illidan_flame_burst_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 
@@ -1315,7 +1326,7 @@ class spell_illidan_found_target : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_illidan_found_target_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+                //OnEffectHitTarget += SpellEffectFn(spell_illidan_found_target_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
             }
         };
 
@@ -1355,7 +1366,7 @@ class spell_illidan_cage_trap : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_illidan_cage_trap_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                //OnEffectHitTarget += SpellEffectFn(spell_illidan_cage_trap_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 

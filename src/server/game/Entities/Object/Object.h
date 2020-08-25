@@ -706,6 +706,8 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
 
 		void AddToObjectUpdate() override;
 		void RemoveFromObjectUpdate() override;
+		
+		void GetCreaturesWithEntryInRange(std::list<Creature*> &creatureList, float radius, uint32 entry);
 
 		//relocation and visibility system functions
 		void AddToNotify(uint16 f) { m_notifyflags |= f; }

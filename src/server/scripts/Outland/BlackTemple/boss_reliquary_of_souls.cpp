@@ -1,7 +1,12 @@
 #include "ScriptMgr.h"
-#include "ScriptedCreature.h"
 #include "black_temple.h"
+#include "InstanceScript.h"
+#include "MotionMaster.h"
+#include "Player.h"
+#include "ScriptedCreature.h"
 #include "Spell.h"
+#include "SpellAuraEffects.h"
+#include "SpellScript.h"
 
 enum Says
 {
@@ -120,7 +125,7 @@ class boss_reliquary_of_souls : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return GetInstanceAI<boss_reliquary_of_soulsAI>(creature);
+            return GetBlackTempleAI<boss_reliquary_of_soulsAI>(creature);
         }
 
         struct boss_reliquary_of_soulsAI : public BossAI
@@ -137,7 +142,7 @@ class boss_reliquary_of_souls : public CreatureScript
 
             void MoveInLineOfSight(Unit* who)
             {
-                if (!who || me->getStandState() != UNIT_STAND_STATE_SLEEP || who->GetTypeId() != TYPEID_PLAYER || me->GetDistance2d(who) > 90.0f || who->ToPlayer()->IsGameMaster())
+                if (!who || me->GetStandState() != UNIT_STAND_STATE_SLEEP || who->GetTypeId() != TYPEID_PLAYER || me->GetDistance2d(who) > 90.0f || who->ToPlayer()->IsGameMaster())
                     return;
 
                 me->SetInCombatWithZone();
@@ -145,7 +150,7 @@ class boss_reliquary_of_souls : public CreatureScript
                 me->SetStandState(UNIT_STAND_STATE_STAND);
             }
 
-            void DoAction(int32 param)
+            void DoAction(int32 param) override
             {
                 if (param == ACTION_ESSENCE_OF_SUFFERING)
                 {
@@ -166,9 +171,9 @@ class boss_reliquary_of_souls : public CreatureScript
                 }
             }
 
-            void EnterCombat(Unit* who)
+            void JustEngagedWith(Unit* who) override
             {
-                BossAI::EnterCombat(who);
+                BossAI::JustEngagedWith(who);
             }
 
             void JustSummoned(Creature* summon)
@@ -198,7 +203,7 @@ class boss_reliquary_of_souls : public CreatureScript
 
             void UpdateAI(uint32 diff)
             {
-                if (me->getStandState() == UNIT_STAND_STATE_SLEEP)
+                if (me->GetStandState() == UNIT_STAND_STATE_SLEEP)
                     return;
 
                 events.Update(diff);
@@ -208,7 +213,7 @@ class boss_reliquary_of_souls : public CreatureScript
                         me->SetStandState(UNIT_STAND_STATE_STAND);
                         break;
                     case EVENT_ENGAGE_ESSENCE:
-                        summons.DoAction(ACTION_ENGAGE_ESSENCE);
+                        //summons.DoAction(ACTION_ENGAGE_ESSENCE); 
                         break;
                     case EVENT_ESSENCE_OF_SUFFERING:
                         me->SetStandState(UNIT_STAND_STATE_SUBMERGED);
@@ -266,7 +271,7 @@ class boss_essence_of_suffering : public CreatureScript
                 events.Reset();
             }
 
-            void DoAction(int32 param)
+            void DoAction(int32 param) override
             {
                 if (param == ACTION_ENGAGE_ESSENCE)
                 {
@@ -282,11 +287,11 @@ class boss_essence_of_suffering : public CreatureScript
                     return;
 
                 me->m_Events.AddEvent(new SuckBackEvent(*me, ACTION_ESSENCE_OF_SUFFERING), me->m_Events.CalculateTime(1500));
-                me->SetTarget(0);
+                me->SetTarget(ObjectGuid::Empty);
                 me->SetFacingTo(M_PI/2.0f);
             }
 
-            void DamageTaken(Unit*, uint32& damage, DamageEffectType, SpellSchoolMask)
+            void DamageTaken(Unit* attacker, uint32& damage) override
             {
                 if (damage >= me->GetHealth())
                 {
@@ -377,7 +382,7 @@ class boss_essence_of_desire : public CreatureScript
                 events.Reset();
             }
 
-            void DoAction(int32 param)
+            void DoAction(int32 param) override
             {
                 if (param == ACTION_ENGAGE_ESSENCE)
                 {
@@ -393,11 +398,11 @@ class boss_essence_of_desire : public CreatureScript
                     return;
 
                 me->m_Events.AddEvent(new SuckBackEvent(*me, ACTION_ESSENCE_OF_DESIRE), me->m_Events.CalculateTime(1500));
-                me->SetTarget(0);
+                me->SetTarget(ObjectGuid::Empty);
                 me->SetFacingTo(M_PI/2.0f);
             }
 
-            void DamageTaken(Unit*, uint32& damage, DamageEffectType, SpellSchoolMask)
+            void DamageTaken(Unit* attacker, uint32& damage) override
             {
                 if (damage >= me->GetHealth())
                 {
@@ -488,7 +493,7 @@ class boss_essence_of_anger : public CreatureScript
                 events.Reset();
             }
 
-            void DoAction(int32 param)
+            void DoAction(int32 param) override
             {
                 if (param == ACTION_ENGAGE_ESSENCE)
                 {
@@ -616,7 +621,7 @@ class spell_reliquary_of_souls_fixate : public SpellScriptLoader
 
             void Register()
             {
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_reliquary_of_souls_fixate_SpellScript::FilterTargets, EFFECT_ALL, TARGET_UNIT_SRC_AREA_ENEMY);
+                //OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_reliquary_of_souls_fixate_SpellScript::FilterTargets, EFFECT_ALL, TARGET_UNIT_SRC_AREA_ENEMY);
             }
         };
 

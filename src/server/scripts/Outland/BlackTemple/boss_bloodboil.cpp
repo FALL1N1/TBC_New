@@ -61,7 +61,7 @@ class boss_gurtogg_bloodboil : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return GetInstanceAI<boss_gurtogg_bloodboilAI>(creature);
+            return GetBlackTempleAI<boss_gurtogg_bloodboilAI>(creature);
         }
 
         struct boss_gurtogg_bloodboilAI : public BossAI
@@ -75,9 +75,9 @@ class boss_gurtogg_bloodboil : public CreatureScript
                 BossAI::Reset();
             }
 
-            void EnterCombat(Unit* who)
+            void JustEngagedWith(Unit* who) override
             {
-                BossAI::EnterCombat(who);
+                BossAI::JustEngagedWith(who);
                 Talk(SAY_AGGRO);
 
                 me->CastSpell(me, SPELL_ACIDIC_WOUND, true);
@@ -207,7 +207,7 @@ class spell_gurtogg_bloodboil : public SpellScriptLoader
 
             void Register()
             {
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_gurtogg_bloodboil_SpellScript::FilterTargets, EFFECT_ALL, TARGET_UNIT_SRC_AREA_ENEMY);
+                //OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_gurtogg_bloodboil_SpellScript::FilterTargets, EFFECT_ALL, TARGET_UNIT_SRC_AREA_ENEMY);
             }
         };
 
@@ -230,12 +230,12 @@ class spell_gurtogg_eject : public SpellScriptLoader
             {
                 PreventHitEffect(effIndex);
                 if (Unit* target = GetHitUnit())
-                    GetCaster()->getThreatManager().modifyThreatPercent(target, -20);
+                    GetCaster()->GetThreatManager().ModifyThreatByPercent(target, -20);
             }
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_gurtogg_eject_SpellScript::HandleScriptEffect, EFFECT_2, SPELL_EFFECT_SCRIPT_EFFECT);
+                //OnEffectHitTarget += SpellEffectFn(spell_gurtogg_eject_SpellScript::HandleScriptEffect, EFFECT_2, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 

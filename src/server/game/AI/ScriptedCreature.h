@@ -302,6 +302,8 @@ struct TC_GAME_API ScriptedAI : public CreatureAI
 
         return heroic10;
     }
+	
+	Player* SelectTargetFromPlayerList(float maxdist, uint32 excludeAura = 0, bool mustBeInLOS = false) const;
 
 private:
     Difficulty _difficulty;

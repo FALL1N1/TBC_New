@@ -1,91 +1,64 @@
 #include "ScriptMgr.h"
-#include "InstanceScript.h"
+#include "AreaBoundary.h"
 #include "black_temple.h"
+#include "Creature.h"
+#include "GameObject.h"
+#include "InstanceScript.h"
+#include "Map.h"
+#include "ScriptedCreature.h"
 
 DoorData const doorData[] =
 {
-    { GO_NAJENTUS_GATE,         DATA_HIGH_WARLORD_NAJENTUS, DOOR_TYPE_PASSAGE,  BOUNDARY_NONE },
-    { GO_NAJENTUS_GATE,         DATA_SUPREMUS,              DOOR_TYPE_ROOM,     BOUNDARY_NONE },
-    { GO_SUPREMUS_GATE,         DATA_SUPREMUS,              DOOR_TYPE_PASSAGE,  BOUNDARY_NONE },
-    { GO_SHADE_OF_AKAMA_DOOR,   DATA_SHADE_OF_AKAMA,        DOOR_TYPE_ROOM,     BOUNDARY_NONE },
-    { GO_TERON_DOOR_1,          DATA_TERON_GOREFIEND,       DOOR_TYPE_ROOM,     BOUNDARY_NONE },
-    { GO_TERON_DOOR_2,          DATA_TERON_GOREFIEND,       DOOR_TYPE_ROOM,     BOUNDARY_NONE },
-    { GO_GURTOGG_DOOR,          DATA_GURTOGG_BLOODBOIL,     DOOR_TYPE_PASSAGE,  BOUNDARY_NONE },
-    { GO_TEMPLE_DOOR,           DATA_GURTOGG_BLOODBOIL,        DOOR_TYPE_PASSAGE,  BOUNDARY_NONE },
-    { GO_TEMPLE_DOOR,           DATA_TERON_GOREFIEND,       DOOR_TYPE_PASSAGE,  BOUNDARY_NONE },
-    { GO_TEMPLE_DOOR,           DATA_RELIQUARY_OF_SOULS,    DOOR_TYPE_PASSAGE,  BOUNDARY_NONE },
-    { GO_MOTHER_SHAHRAZ_DOOR,   DATA_MOTHER_SHAHRAZ,        DOOR_TYPE_PASSAGE,  BOUNDARY_NONE },
-    { GO_COUNCIL_DOOR_1,        DATA_ILLIDARI_COUNCIL,      DOOR_TYPE_ROOM,     BOUNDARY_NONE },
-    { GO_COUNCIL_DOOR_2,        DATA_ILLIDARI_COUNCIL,      DOOR_TYPE_ROOM,     BOUNDARY_NONE },
-    { GO_ILLIDAN_GATE,          DATA_AKAMA_FINISHED,        DOOR_TYPE_PASSAGE,  BOUNDARY_NONE },
-    { GO_ILLIDAN_DOOR_L,        DATA_ILLIDAN_STORMRAGE,     DOOR_TYPE_ROOM,     BOUNDARY_NONE },
-    { GO_ILLIDAN_DOOR_R,        DATA_ILLIDAN_STORMRAGE,     DOOR_TYPE_ROOM,     BOUNDARY_NONE },
-    { 0,                        0,                          DOOR_TYPE_ROOM,     BOUNDARY_NONE }
+    { GO_NAJENTUS_GATE,         DATA_HIGH_WARLORD_NAJENTUS, DOOR_TYPE_PASSAGE},
+    { GO_NAJENTUS_GATE,         DATA_SUPREMUS,              DOOR_TYPE_ROOM},
+    { GO_SUPREMUS_GATE,         DATA_SUPREMUS,              DOOR_TYPE_PASSAGE},
+    { GO_SHADE_OF_AKAMA_DOOR,   DATA_SHADE_OF_AKAMA,        DOOR_TYPE_ROOM},
+    { GO_TERON_DOOR_1,          DATA_TERON_GOREFIEND,       DOOR_TYPE_ROOM},
+    { GO_TERON_DOOR_2,          DATA_TERON_GOREFIEND,       DOOR_TYPE_ROOM},
+    { GO_GURTOGG_DOOR,          DATA_GURTOGG_BLOODBOIL,     DOOR_TYPE_PASSAGE},
+    { GO_TEMPLE_DOOR,           DATA_GURTOGG_BLOODBOIL,        DOOR_TYPE_PASSAGE},
+    { GO_TEMPLE_DOOR,           DATA_TERON_GOREFIEND,       DOOR_TYPE_PASSAGE},
+    { GO_TEMPLE_DOOR,           DATA_RELIQUARY_OF_SOULS,    DOOR_TYPE_PASSAGE},
+    { GO_MOTHER_SHAHRAZ_DOOR,   DATA_MOTHER_SHAHRAZ,        DOOR_TYPE_PASSAGE},
+    { GO_COUNCIL_DOOR_1,        DATA_ILLIDARI_COUNCIL,      DOOR_TYPE_ROOM},
+    { GO_COUNCIL_DOOR_2,        DATA_ILLIDARI_COUNCIL,      DOOR_TYPE_ROOM},
+    { GO_ILLIDAN_GATE,          DATA_AKAMA_FINISHED,        DOOR_TYPE_PASSAGE},
+    { GO_ILLIDAN_DOOR_L,        DATA_ILLIDAN_STORMRAGE,     DOOR_TYPE_ROOM},
+    { GO_ILLIDAN_DOOR_R,        DATA_ILLIDAN_STORMRAGE,     DOOR_TYPE_ROOM},
+    { 0,                        0,                          DOOR_TYPE_ROOM    } // END
 };
 
 class instance_black_temple : public InstanceMapScript
 {
     public:
-        instance_black_temple() : InstanceMapScript("instance_black_temple", 564) { }
-
+        instance_black_temple() : InstanceMapScript(BTScriptName, 564) { }
         struct instance_black_temple_InstanceMapScript : public InstanceScript
         {
             instance_black_temple_InstanceMapScript(Map* map) : InstanceScript(map)
             {
                 SetBossNumber(MAX_ENCOUNTERS);
-                LoadDoorData(doorData);
+                //LoadDoorData(doorData); // @todo
 
-                ShadeOfAkamaGUID            = 0;
-                AkamaShadeGUID              = 0;
-                TeronGorefiendGUID            = 0;
-                ReliquaryGUID                = 0;
+                ShadeOfAkamaGUID.Clear();
+                AkamaShadeGUID.Clear();
+                TeronGorefiendGUID.Clear();
+                ReliquaryGUID.Clear();
                 ashtongueGUIDs.clear();
-                GathiosTheShattererGUID     = 0;
-                HighNethermancerZerevorGUID = 0;
-                LadyMalandeGUID             = 0;
-                VerasDarkshadowGUID         = 0;
-                IllidariCouncilGUID         = 0;
-                AkamaGUID                   = 0;
-                IllidanStormrageGUID        = 0;
+                GathiosTheShattererGUID.Clear();
+                HighNethermancerZerevorGUID.Clear();
+                LadyMalandeGUID.Clear();
+                VerasDarkshadowGUID.Clear();
+                IllidariCouncilGUID.Clear();
+                AkamaGUID.Clear();
+                IllidanStormrageGUID.Clear();
             }
 
             void OnCreatureCreate(Creature* creature)
             {
+                InstanceScript::OnCreatureCreate(creature);
+
                 switch (creature->GetEntry())
                 {
-                    case NPC_SHADE_OF_AKAMA:
-                        ShadeOfAkamaGUID = creature->GetGUID();
-                        break;
-                    case NPC_AKAMA_SHADE:
-                        AkamaShadeGUID = creature->GetGUID();
-                        break;
-                    case NPC_TERON_GOREFIEND:
-                        TeronGorefiendGUID = creature->GetGUID();
-                        break;
-                    case NPC_RELIQUARY_OF_THE_LOST:
-                        ReliquaryGUID = creature->GetGUID();
-                        break;
-                    case NPC_GATHIOS_THE_SHATTERER:
-                        GathiosTheShattererGUID = creature->GetGUID();
-                        break;
-                    case NPC_HIGH_NETHERMANCER_ZEREVOR:
-                        HighNethermancerZerevorGUID = creature->GetGUID();
-                        break;
-                    case NPC_LADY_MALANDE:
-                        LadyMalandeGUID = creature->GetGUID();
-                        break;
-                    case NPC_VERAS_DARKSHADOW:
-                        VerasDarkshadowGUID = creature->GetGUID();
-                        break;
-                    case NPC_ILLIDARI_COUNCIL:
-                        IllidariCouncilGUID = creature->GetGUID();
-                        break;
-                    case NPC_AKAMA:
-                        AkamaGUID = creature->GetGUID();
-                        break;
-                    case NPC_ILLIDAN_STORMRAGE:
-                        IllidanStormrageGUID = creature->GetGUID();
-                        break;
                     case NPC_VENGEFUL_SPIRIT:
                     case NPC_SHADOWY_CONSTRUCT:
                         if (Creature* teron = instance->GetCreature(TeronGorefiendGUID))
@@ -109,15 +82,17 @@ class instance_black_temple : public InstanceMapScript
                 }
 
                 if (creature->GetName().find("Ashtongue") != std::string::npos || creature->GetEntry() == NPC_STORM_FURY)
-                {
-                    ashtongueGUIDs.push_back(creature->GetGUID());
+                { 
+                    ashtongueGUIDs.push_back(creature->GetGUID()); 
                     if (GetBossState(DATA_SHADE_OF_AKAMA) == DONE)
-                        creature->setFaction(FACTION_ASHTONGUE);
+                        creature->SetFaction(FACTION_ASHTONGUE);
                 }
             }
 
             void OnGameObjectCreate(GameObject* go)
             {
+                InstanceScript::OnGameObjectCreate(go);
+
                 switch (go->GetEntry())
                 {
                     case GO_NAJENTUS_GATE:
@@ -193,10 +168,11 @@ class instance_black_temple : public InstanceMapScript
                     return false;
 
                 if (type == DATA_SHADE_OF_AKAMA && state == DONE)
-                {
-                    for (std::list<uint64>::const_iterator itr = ashtongueGUIDs.begin(); itr != ashtongueGUIDs.end(); ++itr)
-                        if (Creature* ashtongue = instance->GetCreature(*itr))
-                            ashtongue->setFaction(FACTION_ASHTONGUE);
+                { 
+                        for (ObjectGuid ashtongueGuid : ashtongueGUIDs)
+                            if (Creature* ashtongue = instance->GetCreature(ashtongueGuid))
+                                ashtongue->SetFaction(FACTION_ASHTONGUE);
+                        //[[fallthrough]];
                 }
                 else if (type == DATA_ILLIDARI_COUNCIL && state == DONE)
                 {
@@ -205,64 +181,21 @@ class instance_black_temple : public InstanceMapScript
                 }
 
                 return true;
-            }
-
-            std::string GetSaveData()
-            {
-                OUT_SAVE_INST_DATA;
-
-                std::ostringstream saveStream;
-                saveStream << "B T " << GetBossSaveData();
-
-                OUT_SAVE_INST_DATA_COMPLETE;
-                return saveStream.str();
-            }
-
-            void Load(char const* str)
-            {
-                if (!str)
-                {
-                    OUT_LOAD_INST_DATA_FAIL;
-                    return;
-                }
-
-                OUT_LOAD_INST_DATA(str);
-
-                char dataHead1, dataHead2;
-
-                std::istringstream loadStream(str);
-                loadStream >> dataHead1 >> dataHead2;
-
-                if (dataHead1 == 'B' && dataHead2 == 'T')
-                {
-                    for (uint8 i = 0; i < MAX_ENCOUNTERS; ++i)
-                    {
-                        uint32 tmpState;
-                        loadStream >> tmpState;
-                        if (tmpState == IN_PROGRESS || tmpState > SPECIAL)
-                            tmpState = NOT_STARTED;
-                        SetBossState(i, EncounterState(tmpState));
-                    }
-                }
-                else
-                    OUT_LOAD_INST_DATA_FAIL;
-
-                OUT_LOAD_INST_DATA_COMPLETE;
-            }
+            } 
 
         protected:
-            uint64 ShadeOfAkamaGUID;
-            uint64 AkamaShadeGUID;
-            uint64 TeronGorefiendGUID;
-            uint64 ReliquaryGUID;
-            std::list<uint64> ashtongueGUIDs;
-            uint64 GathiosTheShattererGUID;
-            uint64 HighNethermancerZerevorGUID;
-            uint64 LadyMalandeGUID;
-            uint64 VerasDarkshadowGUID;
-            uint64 IllidariCouncilGUID;
-            uint64 AkamaGUID;
-            uint64 IllidanStormrageGUID;
+            ObjectGuid ShadeOfAkamaGUID;
+            ObjectGuid AkamaShadeGUID;
+            ObjectGuid TeronGorefiendGUID;
+            ObjectGuid ReliquaryGUID;
+            GuidVector ashtongueGUIDs;
+            ObjectGuid GathiosTheShattererGUID;
+            ObjectGuid HighNethermancerZerevorGUID;
+            ObjectGuid LadyMalandeGUID;
+            ObjectGuid VerasDarkshadowGUID;
+            ObjectGuid IllidariCouncilGUID;
+            ObjectGuid AkamaGUID;
+            ObjectGuid IllidanStormrageGUID;
         };
 
         InstanceScript* GetInstanceScript(InstanceMap* map) const
@@ -291,20 +224,19 @@ class spell_black_template_harpooners_mark : public SpellScriptLoader
                 std::list<Creature*> creatureList;
                 GetUnitOwner()->GetCreaturesWithEntryInRange(creatureList, 80.0f, NPC_DRAGON_TURTLE);
                 for (std::list<Creature*>::const_iterator itr = creatureList.begin(); itr != creatureList.end(); ++itr)
-                {
-                    (*itr)->TauntApply(GetUnitOwner());
-                    (*itr)->AddThreat(GetUnitOwner(), 10000000.0f);
+                { 
+                    (*itr)->GetThreatManager().AddThreat(GetUnitOwner(), 10000000.0f); 
                     _turtleSet.insert((*itr)->GetGUID());
                 }
             }
 
             void HandleEffectRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
             {
-                for (std::set<uint64>::const_iterator itr = _turtleSet.begin(); itr != _turtleSet.end(); ++itr)
-                    if (Creature* turtle = ObjectAccessor::GetCreature(*GetUnitOwner(), *itr))
-                    {
-                        turtle->TauntFadeOut(GetUnitOwner());
-                        turtle->AddThreat(GetUnitOwner(), -10000000.0f);
+                //for (std::set<uint64>::const_iterator itr = _turtleSet.begin(); itr != _turtleSet.end(); ++itr)
+                for (ObjectGuid creatureGUID : _turtleSet)
+                    if (Creature* turtle = ObjectAccessor::GetCreature(*GetUnitOwner(), creatureGUID))
+                    { 
+                        turtle->GetThreatManager().AddThreat(GetUnitOwner(), -10000000.0f);
                     }
             }
 
@@ -315,7 +247,7 @@ class spell_black_template_harpooners_mark : public SpellScriptLoader
             }
 
             private:
-                std::set<uint64> _turtleSet;
+                std::set<ObjectGuid> _turtleSet;
         };
 
         AuraScript* GetAuraScript() const
@@ -350,7 +282,8 @@ class spell_black_template_free_friend : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_black_template_free_friend_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                // @todo
+                //OnEffectHitTarget += SpellEffectFn(spell_black_template_free_friend_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 
@@ -568,7 +501,8 @@ class spell_black_temple_bloodbolt : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_black_temple_bloodbolt_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                // @todo
+                //OnEffectHitTarget += SpellEffectFn(spell_black_temple_bloodbolt_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 
@@ -664,6 +598,7 @@ class spell_black_temple_dementia : public SpellScriptLoader
 void AddSC_instance_black_temple()
 {
     new instance_black_temple();
+
     new spell_black_template_harpooners_mark();
     new spell_black_template_free_friend();
     new spell_black_temple_curse_of_the_bleakheart();
