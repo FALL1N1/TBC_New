@@ -1,6 +1,54 @@
 # Fork targets
 
 This fork's focus is mainly to port back the removed scripts and eventually do more optimizations on the current code.
+If you have played TBC and you know how stuff works - feel free to give it a test and update us with bugs.
+Any PRs are welcome.
+
+Current progress:
+
+> Arenas
+[ ] Ring of Trials
+[ ] Circle of Blood
+[ ] Ruins of Lordaeron
+
+> Battlegrounds 
+
+[ ] Warsong Gulch
+[ ] Arathi Basin
+[ ] Alterac Valley
+[ ] Eye of the Storm
+
+
+> Dungeons
+
+[ ] Hellfire Ramparts	
+[ ] Blood Furnace
+[ ] Slave Pens	
+[ ] Underbog	
+[ ] Mana-Tombs	
+[ ] Auchenai Crypts	
+[ ] Escape from Durnholde Keep	
+[ ] Sethekk Halls	
+[ ] Shadow Labyrinth	
+[ ] Shattered Halls	
+[ ] The Botanica	
+[ ] The Mechanar	
+[ ] The Steamvault	
+[ ] Magisters' Terrace	 
+[ ] Opening of the Dark Portal	
+[ ] The Arcatraz	  
+
+> Raids
+
+[ ] Karazhan
+[ ] Gruul's Lair
+[ ] Magtheridon's Lair
+[ ] Zul'Aman
+[ ] Serpentshrine Cavern
+[ ] Tempest Keep: The Eye
+[ ] Battle for Mount Hyjal
+[x] Black Templ
+[x] Sunwell Plateau
 
 
 # Sunstrider-related
