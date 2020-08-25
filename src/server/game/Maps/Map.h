@@ -478,6 +478,9 @@ class TC_GAME_API Map : public GridRefManager<NGridType>
         void RemoveFromForceActive(T* obj) { RemoveFromForceActiveHelper(obj); }
 
         void RemoveFromForceActive(Creature* obj);
+		
+		
+        template<class NOTIFIER> void VisitAll(const float &x, const float &y, float radius, NOTIFIER &notifier);
 
 		void UpdateIteratorBack(Player* player);
 
@@ -903,6 +906,20 @@ class TC_GAME_API BattlegroundMap : public Map
     private:
         Battleground* m_bg;
 };
+
+
+template<class NOTIFIER>
+inline void Map::VisitAll(float const& x, float const& y, float radius, NOTIFIER& notifier)
+{ 
+    CellCoord p(Trinity::ComputeCellCoord(x, y));
+    Cell cell(p);
+    cell.SetNoCreate();
+
+    TypeContainerVisitor<NOTIFIER, WorldTypeMapContainer> world_object_notifier(notifier);
+    cell.Visit(p, world_object_notifier, *this, radius, x, y);
+    TypeContainerVisitor<NOTIFIER, GridTypeMapContainer >  grid_object_notifier(notifier);
+    cell.Visit(p, grid_object_notifier, *this, radius, x, y);
+}
 
 template<class T, class CONTAINER>
 inline void Map::Visit(Cell const& cell, TypeContainerVisitor<T, CONTAINER>& visitor)

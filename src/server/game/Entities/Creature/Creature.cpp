@@ -2772,7 +2772,7 @@ void Creature::SetInCombatWithZone()
 { 
     if (!CanHaveThreatList())
     {
-        sLog->outError("Creature entry %u call SetInCombatWithZone but creature cannot have threat list.", GetEntry());
+        TC_LOG_ERROR("server.worldserver", "Creature entry %u call SetInCombatWithZone but creature cannot have threat list.", GetEntry());
         return;
     }
 
@@ -2780,7 +2780,7 @@ void Creature::SetInCombatWithZone()
 
     if (!map->IsDungeon())
     {
-        sLog->outError("Creature entry %u call SetInCombatWithZone for map (id: %u) that isn't an instance.", GetEntry(), map->GetId());
+        TC_LOG_ERROR("server.worldserver", "Creature entry %u call SetInCombatWithZone for map (id: %u) that isn't an instance.", GetEntry(), map->GetId());
         return;
     }
 
@@ -2800,7 +2800,7 @@ void Creature::SetInCombatWithZone()
             {
                 this->SetInCombatWith(player);
                 player->SetInCombatWith(this);
-                AddThreat(player, 0.0f);
+                GetThreatManager().AddThreat(player, 0.0f);
             }
         }
     }

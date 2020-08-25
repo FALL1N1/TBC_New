@@ -611,6 +611,33 @@ namespace Trinity
             Unit const* i_funit;
             float i_range;
     };
+	
+    class TC_GAME_API AnyUnfriendlyNoTotemUnitInObjectRangeCheck
+    {
+        public:
+            AnyUnfriendlyNoTotemUnitInObjectRangeCheck(WorldObject const* obj, Unit const* funit, float range) : i_obj(obj), i_funit(funit), i_range(range) {}
+            bool operator()(Unit* u)
+            {
+                if (!u->IsAlive())
+                    return false;
+
+                if (u->GetCreatureType() == CREATURE_TYPE_NON_COMBAT_PET)
+                    return false;
+
+                if (u->GetTypeId() == TYPEID_UNIT && (u->ToCreature()->IsTotem() || u->ToCreature()->IsTrigger() || u->ToCreature()->IsAvoidingAOE())) // pussywizard: added IsAvoidingAOE()
+                    return false;
+
+                if (!u->IsTargetableForAttack(false))
+                    return false;
+
+                return i_obj->IsWithinDistInMap(u, i_range) && !i_funit->IsFriendlyTo(u);
+            }
+        private:
+            WorldObject const* i_obj;
+            Unit const* i_funit;
+            float i_range;
+    };
+
 
     class TC_GAME_API AnyUnfriendlyAoEAttackableUnitInObjectRangeCheck
     {

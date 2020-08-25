@@ -643,6 +643,10 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         void SetWorldObject(bool apply);
 		bool IsPermanentWorldObject() const { return m_isWorldObject; }
 		bool IsWorldObject() const;
+		
+		template<class NOTIFIER> void VisitNearbyObject(float const& radius, NOTIFIER& notifier) const { if (IsInWorld()) GetMap()->VisitAll(GetPositionX(), GetPositionY(), radius, notifier); }
+        template<class NOTIFIER> void VisitNearbyGridObject(float const& radius, NOTIFIER& notifier) const { if (IsInWorld()) GetMap()->VisitGrid(GetPositionX(), GetPositionY(), radius, notifier); }
+        template<class NOTIFIER> void VisitNearbyWorldObject(float const& radius, NOTIFIER& notifier) const { if (IsInWorld()) GetMap()->VisitWorld(GetPositionX(), GetPositionY(), radius, notifier); }
 
         bool m_isTempWorldObject;
 

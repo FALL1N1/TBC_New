@@ -151,7 +151,7 @@ enum CreatureFlagsExtra : uint32
     CREATURE_FLAG_EXTRA_NO_PLAYER_DAMAGE_REQ = 0x00400000,       // creature does not need to take player damage for kill credit
     CREATURE_FLAG_EXTRA_NO_HEALTH_RESET      = 0x00800000,       // creature does not refill its health at reset
     CREATURE_FLAG_EXTRA_GUARD                = 0x01000000,       // Creature is guard
-
+    CREATURE_FLAG_EXTRA_AVOID_AOE            = 0x02000000,       // pussywizard: ignored by aoe attacks (for icc blood prince council npc - Dark Nucleus)
 
     CREATURE_FLAG_EXTRA_DB_ALLOWED = (0xFFFFFFFF & ~(CREATURE_FLAG_EXTRA_DUNGEON_BOSS))
 };
@@ -770,6 +770,7 @@ class TC_GAME_API Creature : public Unit, public GridObject<Creature>, public Ma
         bool IsTrigger() const { return GetCreatureTemplate()->flags_extra & CREATURE_FLAG_EXTRA_TRIGGER; }
         bool IsDungeonBoss() const { return (GetCreatureTemplate()->flags_extra & CREATURE_FLAG_EXTRA_DUNGEON_BOSS) != 0; }
         bool IsAffectedByDiminishingReturns() const override { return Unit::IsAffectedByDiminishingReturns() /*|| (GetCreatureTemplate()->flags_extra & CREATURE_FLAG_EXTRA_ALL_DIMINISH) != 0*/; }
+		bool IsAvoidingAOE() const { return GetCreatureTemplate()->flags_extra & CREATURE_FLAG_EXTRA_AVOID_AOE; }
 
         Unit* SelectVictim(bool evade = true);
 
