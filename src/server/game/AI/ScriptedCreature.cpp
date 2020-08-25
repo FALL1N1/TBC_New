@@ -94,6 +94,20 @@ void SummonList::DoZoneInCombat(uint32 entry)
     }
 }
 
+void SummonList::Respawn()
+{
+    for (StorageType::iterator i = storage_.begin(); i != storage_.end();)
+    {
+        if (Creature* summon = ObjectAccessor::GetCreature(*me, *i))
+        {
+            summon->Respawn(true);
+            ++i;
+        }
+        else
+            i = storage_.erase(i);
+    }
+}
+
 bool SummonList::IsAlive(uint32 creatureId /*= 0*/)
 {
     for (ObjectGuid const i : *this)

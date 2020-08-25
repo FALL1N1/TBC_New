@@ -428,7 +428,8 @@ class spell_madrigosa_activate_barrier : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_madrigosa_activate_barrier_SpellScript::HandleActivateObject, EFFECT_0, SPELL_EFFECT_ACTIVATE_OBJECT);
+                // @todo
+                //OnEffectHitTarget += SpellEffectFn(spell_madrigosa_activate_barrier_SpellScript::HandleActivateObject, EFFECT_0, SPELL_EFFECT_ACTIVATE_OBJECT);
             }
         };
 
@@ -471,7 +472,8 @@ class spell_madrigosa_deactivate_barrier : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_madrigosa_deactivate_barrier_SpellScript::HandleActivateObject, EFFECT_0, SPELL_EFFECT_ACTIVATE_OBJECT);
+                 // @todo
+                 // OnEffectHitTarget += SpellEffectFn(spell_madrigosa_deactivate_barrier_SpellScript::HandleActivateObject, EFFECT_0, SPELL_EFFECT_ACTIVATE_OBJECT);
             }
         };
 
@@ -490,7 +492,7 @@ class spell_brutallus_burn : public SpellScriptLoader
         {
             PrepareSpellScript(spell_brutallus_burn_SpellScript);
 
-            void HandleScriptEffect(SpellEffIndex effIndex)
+            void HandleDummy(SpellEffIndex effIndex, int32& damage)
             {
                 PreventHitDefaultEffect(effIndex);
                 if (Unit* target = GetHitUnit())
@@ -500,7 +502,7 @@ class spell_brutallus_burn : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_brutallus_burn_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_brutallus_burn_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 

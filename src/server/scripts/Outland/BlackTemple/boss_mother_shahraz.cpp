@@ -264,9 +264,9 @@ class spell_mother_shahraz_fatal_attraction : public SpellScriptLoader
 
             void SetDest(SpellDestination& dest)
             {
-                std::list<Spell::TargetInfo> const* targetsInfo = GetSpell()->GetUniqueTargetInfo();
-                for (std::list<Spell::TargetInfo>::const_iterator ihit = targetsInfo->begin(); ihit != targetsInfo->end(); ++ihit)
-                    if (Unit* target = ObjectAccessor::GetUnit(*GetCaster(), ihit->targetGUID))
+                std::vector<Spell::TargetInfo> targetsInfo = GetSpell()->GetUniqueTargetInfo();
+                for (std::vector<Spell::TargetInfo>::const_iterator ihit = targetsInfo.begin(); ihit != targetsInfo.end(); ++ihit)
+                    if (Unit* target = ObjectAccessor::GetUnit(*GetCaster(), ihit->TargetGUID))
                     {
                         dest.Relocate(*target);
                         if (roll_chance_i(50))
@@ -282,9 +282,9 @@ class spell_mother_shahraz_fatal_attraction : public SpellScriptLoader
 
             void Register()
             {
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_mother_shahraz_fatal_attraction_SpellScript::FilterTargets, EFFECT_ALL, TARGET_UNIT_SRC_AREA_ENEMY);
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_mother_shahraz_fatal_attraction_SpellScript::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
                 OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_mother_shahraz_fatal_attraction_SpellScript::SetDest, EFFECT_1, TARGET_DEST_CASTER_RANDOM);
-                OnEffectHitTarget += SpellEffectFn(spell_mother_shahraz_fatal_attraction_SpellScript::HandleTeleportUnits, EFFECT_1, SPELL_EFFECT_TELEPORT_UNITS);
+                // @todo OnEffectHitTarget += SpellEffectFn(spell_mother_shahraz_fatal_attraction_SpellScript::HandleTeleportUnits, EFFECT_0, SPELL_EFFECT_TELEPORT_UNITS);
             }
         };
 
@@ -304,7 +304,7 @@ class spell_mother_shahraz_fatal_attraction_dummy : public SpellScriptLoader
         {
             PrepareSpellScript(spell_mother_shahraz_fatal_attraction_dummy_SpellScript);
 
-            void HandleDummy(SpellEffIndex effIndex)
+            void HandleDummy(SpellEffIndex effIndex, int32& damage)
             {
                 if (Unit* target = GetHitUnit())
                 {

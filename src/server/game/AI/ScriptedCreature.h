@@ -106,6 +106,7 @@ public:
     void DoZoneInCombat(uint32 entry = 0);
     void RemoveNotExisting();
     Creature* GetCreatureWithEntry(uint32 entry) const; //replaces HasEntry from TC
+    void Respawn();
 
 private:
     void DoActionImpl(int32 action, StorageType const& summons);
@@ -122,6 +123,19 @@ public:
 
 private:
     uint32 _entry;
+};
+
+class TC_GAME_API PlayerOrPetCheck
+{
+    public:
+        bool operator() (WorldObject* unit) const
+        {
+            if (unit->GetTypeId() != TYPEID_PLAYER)
+                //if (!IS_PLAYER_GUID(unit->ToUnit()->GetOwnerGUID())) 
+                    return true;
+
+            return false;
+        }
 };
 
 class TC_GAME_API DummyEntryCheckPredicate

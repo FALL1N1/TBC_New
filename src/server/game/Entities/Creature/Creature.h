@@ -994,6 +994,9 @@ class TC_GAME_API Creature : public Unit, public GridObject<Creature>, public Ma
         virtual uint8 GetPetAutoSpellSize() const { return MAX_CREATURE_SPELLS; }
 		virtual uint32 GetPetAutoSpellOnPos(uint8 pos) const;
 		float GetPetChaseDistance() const;
+		
+        void SetPosition(float x, float y, float z, float o);
+        void SetPosition(const Position &pos) { SetPosition(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation()); }
 
         void SetHomePosition(float x, float y, float z, float o) { m_homePosition.Relocate(x, y, z, o); }
         void SetHomePosition(const Position &pos) { m_homePosition.Relocate(pos); }

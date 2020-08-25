@@ -473,7 +473,7 @@ class spell_felmyst_fog_of_corruption : public SpellScriptLoader
         {
             PrepareSpellScript(spell_felmyst_fog_of_corruption_SpellScript);
 
-            void HandleScriptEffect(SpellEffIndex effIndex)
+            void HandleDummy(SpellEffIndex effIndex, int32& damage)
             {
                 PreventHitDefaultEffect(effIndex);
                 if (Unit* target = GetHitUnit())
@@ -482,7 +482,7 @@ class spell_felmyst_fog_of_corruption : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_felmyst_fog_of_corruption_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_felmyst_fog_of_corruption_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 

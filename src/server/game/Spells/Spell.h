@@ -571,8 +571,7 @@ class TC_GAME_API Spell
         SpellMissInfo GetForceHitResult() const { return _forceHitResult; }
         //once set, cannot be changed
         void SetForceHitResult(SpellMissInfo result);
-
-    protected:
+          
         bool HasGlobalCooldown();
         void TriggerGlobalCooldown();
         void CancelGlobalCooldown();
@@ -692,6 +691,8 @@ class TC_GAME_API Spell
             bool _enablePVP = false;         // need to enable PVP at DoDamageAndTriggers?
         };
         std::vector<TargetInfo> m_UniqueTargetInfo;
+        std::vector<TargetInfo> GetUniqueTargetInfo() { return m_UniqueTargetInfo; }
+
         uint8 m_channelTargetEffectMask;                        // Mask req. alive targets
 
         struct GOTargetInfo : public TargetInfoBase

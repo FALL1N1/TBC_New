@@ -828,6 +828,43 @@ void WorldObject::SetKeepActive(bool on)
     }
 }
 
+void WorldObject::setActive(bool on)
+{
+    if(m_isActive == on)
+        return;
+
+    if(GetTypeId() == TYPEID_PLAYER)
+        return;
+
+    m_isActive = on;
+
+    if(!IsInWorld())
+        return;
+
+    Map *map = FindMap();
+    if(!map)
+        return;
+
+    if(on)
+    {
+        if(GetTypeId() == TYPEID_UNIT)
+            map->AddToForceActive(this->ToCreature());
+        else if(GetTypeId() == TYPEID_DYNAMICOBJECT)
+            map->AddToForceActive((DynamicObject*)this);
+
+        //sun: load grid if not done. Else unit won't update properly if grid wasn't loaded beforehand
+        if (!map->IsGridLoaded(GetPositionX(), GetPositionY()))
+            map->LoadGrid(GetPositionX(), GetPositionY());
+    }
+    else
+    {
+        if(GetTypeId() == TYPEID_UNIT)
+            map->RemoveFromForceActive(this->ToCreature());
+        else if(GetTypeId() == TYPEID_DYNAMICOBJECT)
+            map->RemoveFromForceActive((DynamicObject*)this);
+    }
+}
+
 void WorldObject::SetFarVisible(bool on)
 {
     if (GetTypeId() == TYPEID_PLAYER)
@@ -3902,6 +3939,24 @@ bool WorldObject::IsValidAssistTarget(WorldObject const* target, SpellInfo const
     return true;
 }
 
+float Position::GetAngle(const Position* obj) const
+{
+    if (!obj)
+        return 0;
+
+    return GetAngle(obj->GetPositionX(), obj->GetPositionY());
+}
+
+// Return angle in range 0..2*pi
+float Position::GetAngle(const float x, const float y) const
+{
+    float dx = x - GetPositionX();
+    float dy = y - GetPositionY();
+
+    float ang = atan2(dy, dx);
+    ang = (ang >= 0) ? ang : 2 * M_PI + ang;
+    return ang;
+}
 Unit* WorldObject::GetMagicHitRedirectTarget(Unit* victim, SpellInfo const* spellInfo)
 {
     // Patch 1.2 notes: Spell Reflection no longer reflects abilities

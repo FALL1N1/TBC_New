@@ -1,7 +1,3 @@
-/*
-REWRITTEN BY XINEF
-*/
-
 #include "ScriptMgr.h"
 #include "GameObject.h"
 #include "InstanceScript.h"
@@ -326,7 +322,7 @@ public:
                 me->SetReactState(REACT_PASSIVE);
                 me->RemoveAllAuras();
                 me->GetThreatManager().ResetAllThreat();
-                me->SetRegeneratingHealth(false);
+                me->setRegeneratingHealth(false);
                 me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                 me->HandleEmoteCommand(EMOTE_ONESHOT_DROWN);
                 me->ResetAttackTimer();
@@ -360,12 +356,13 @@ public:
                 Talk(SAY_KJ_SLAY);
         }
 
-        void EnterCombat(Unit* /*who*/)
+        void JustEngagedWith(Unit* /*who*/)
         {
             events2.ScheduleEvent(EVENT_TEXT_SPEACH11, 26000, EVENT_GROUP_SPEACH);
             Talk(SAY_KJ_EMERGE);
 
-            events.SetTimer(200000);
+            //events.SetTimer(200000);
+            events.DelayEvents(200000);
             events.ScheduleEvent(EVENT_CHECK_HEALTH85, 1000);
             events.ScheduleEvent(EVENT_CHECK_HEALTH55, 1000);
             events.ScheduleEvent(EVENT_CHECK_HEALTH25, 1000);
@@ -380,7 +377,7 @@ public:
             if (summon->GetEntry() == NPC_ARMAGEDDON_TARGET)
             {
                 summon->SetDisableGravity(true);
-                summon->SetCanFly(true);
+                summon->SetFlying(true);
                 summon->CastSpell(summon, SPELL_ARMAGEDDON_VISUAL, true);
                 summon->SetPosition(summon->GetPositionX(), summon->GetPositionY(), summon->GetPositionZ()+20.0f, 0.0f);
                 summon->m_Events.AddEvent(new CastArmageddon(summon), summon->m_Events.CalculateTime(6000));
@@ -799,7 +796,7 @@ public:
             if (param == ACTION_START_POST_EVENT)
             {
                 me->SetDisableGravity(false);
-                me->SetCanFly(false);
+                me->SetFlying(false);
                 me->CastSpell(me, SPELL_TELEPORT_AND_TRANSFORM, true);
                 events.ScheduleEvent(EVENT_SCENE_01, 35000);
             }
@@ -1067,20 +1064,19 @@ class spell_kiljaeden_sinister_reflection : public SpellScriptLoader
                 targets.remove_if(Trinity::UnitAuraCheck(true, SPELL_VENGEANCE_OF_THE_BLUE_FLIGHT));
             }
 
-            void HandleScriptEffect(SpellEffIndex effIndex)
+            void HandleDummy(SpellEffIndex effIndex, int32& damage)
             {
                 PreventHitDefaultEffect(effIndex);
                 if (Unit* target = GetHitUnit())
                 {
-                    target->CastSpell(target, SPELL_SINISTER_REFLECTION_SUMMON, true);
-                    //target->CastSpell(target, SPELL_SINISTER_REFLECTION_CLONE, true);
+                    target->CastSpell(target, SPELL_SINISTER_REFLECTION_SUMMON, true); 
                 }
             }
 
             void Register()
             {
                 OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_kiljaeden_sinister_reflection_SpellScript::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
-                OnEffectHitTarget += SpellEffectFn(spell_kiljaeden_sinister_reflection_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_kiljaeden_sinister_reflection_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 
@@ -1114,7 +1110,7 @@ class spell_kiljaeden_sinister_reflection_clone : public SpellScriptLoader
 
             void Register()
             {
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_kiljaeden_sinister_reflection_clone_SpellScript::FilterTargets, EFFECT_ALL, TARGET_UNIT_SRC_AREA_ENEMY);
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_kiljaeden_sinister_reflection_clone_SpellScript::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
             }
         };
 
@@ -1133,7 +1129,7 @@ class spell_kiljaeden_flame_dart : public SpellScriptLoader
         {
             PrepareSpellScript(spell_kiljaeden_flame_dart_SpellScript);
 
-            void HandleSchoolDamage(SpellEffIndex effIndex)
+            void HandleDamage(SpellEffIndex /*effIndex*/, int32& damage)
             {
                 if (Unit* target = GetHitUnit())
                     target->CastSpell(target, SPELL_FLAME_DART_EXPLOSION, true);
@@ -1141,7 +1137,7 @@ class spell_kiljaeden_flame_dart : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_kiljaeden_flame_dart_SpellScript::HandleSchoolDamage, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
+                OnEffectHitTarget += SpellEffectFn(spell_kiljaeden_flame_dart_SpellScript::HandleDamage, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
             }
         };
 
@@ -1189,7 +1185,7 @@ class spell_kiljaeden_power_of_the_blue_flight : public SpellScriptLoader
         {
             PrepareSpellScript(spell_kiljaeden_power_of_the_blue_flight_SpellScript);
 
-            void HandleScriptEffect(SpellEffIndex effIndex)
+            void HandleDummy(SpellEffIndex effIndex, int32& damage)
             {
                 PreventHitDefaultEffect(effIndex);
                 if (Player* player = GetHitPlayer())
@@ -1201,7 +1197,7 @@ class spell_kiljaeden_power_of_the_blue_flight : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_kiljaeden_power_of_the_blue_flight_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_kiljaeden_power_of_the_blue_flight_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 
@@ -1315,8 +1311,8 @@ class spell_kiljaeden_dragon_breath : public SpellScriptLoader
             }
 
             void Register()
-            {
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_kiljaeden_dragon_breath_SpellScript::FilterTargets, EFFECT_ALL, TARGET_UNIT_CONE_ALLY);
+            { 
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_kiljaeden_dragon_breath_SpellScript::FilterTargets, EFFECT_0, TARGET_UNIT_CONE_ALLY);
             }
         };
 

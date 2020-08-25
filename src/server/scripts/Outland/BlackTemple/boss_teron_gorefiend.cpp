@@ -51,7 +51,7 @@ enum Misc
     EVENT_TALK_KILL                    = 10
 };
 
-struct ShadowOfDeathSelector : public std::unary_function<Unit*, bool>
+struct ShadowOfDeathSelector : public spp_unary_function<Unit*, bool>
 {
     bool operator()(Unit const* target) const
     {
@@ -298,9 +298,9 @@ class spell_teron_gorefiend_shadowy_construct : public SpellScriptLoader
             void HandleEffectApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
             {
                 GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_SCHOOL, SPELL_SCHOOL_MASK_NORMAL, true);
-                GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_LANCE, true);
-                GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_CHAINS, true);
-                GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ALLOW_ID, SPELL_SPIRIT_VOLLEY, true);
+                GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ID, SPELL_SPIRIT_LANCE, true);
+                GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ID, SPELL_SPIRIT_CHAINS, true);
+                GetUnitOwner()->ApplySpellImmune(0, IMMUNITY_ID, SPELL_SPIRIT_VOLLEY, true);
 
                 GetUnitOwner()->ToCreature()->SetInCombatWithZone();
                 Map::PlayerList const& playerList = GetUnitOwner()->GetMap()->GetPlayers();

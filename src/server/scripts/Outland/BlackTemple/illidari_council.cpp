@@ -6,6 +6,7 @@
 #include "SpellAuraEffects.h"
 #include "SpellScript.h"
 #include "black_temple.h" 
+#include "SpellInfo.h" 
 
 enum Says
 {
@@ -31,6 +32,9 @@ enum Spells
     SPELL_CHROMATIC_RESISTANCE_AURA        = 41453,
     SPELL_DEVOTION_AURA                    = 41452,
     SPELL_JUDGEMENT                        = 41467,
+    SPELL_JUDGEMENT_PRIMER                 = 41473, 
+    SPELL_JUDGEMENT_OF_COMMAND             = 41470,
+    SPELL_JUDGEMENT_OF_BLOOD               = 41461,
 
     // High Nethermancer Zerevor
     SPELL_FLAMESTRIKE                    = 41481,
@@ -87,7 +91,7 @@ enum Misc
     EVENT_KILL_TALK                        = 100
 };
 
-struct TC_GAME_API HammerOfJusticeSelector : public std::unary_function<Unit*, bool>
+struct TC_GAME_API HammerOfJusticeSelector : public spp_unary_function<Unit*, bool>
 {
     Unit const* _me;
     HammerOfJusticeSelector(Unit* me) : _me(me) { }
@@ -539,8 +543,8 @@ class boss_veras_darkshadow : public CreatureScript
                     case EVENT_SPELL_VANISH_OUT:
                         me->CastSpell(me, SPELL_VANISH_OUT, false);
                         break;
-                    case EVENT_SPELL_ENRAGE:
-                        DoResetThreat();
+                    case EVENT_SPELL_ENRAGE: 
+                        me->GetThreatManager().ResetAllThreat();
                         if (Creature* council = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_ILLIDARI_COUNCIL)))
                             council->GetAI()->DoAction(ACTION_ENRAGE);
                         break;
@@ -596,7 +600,7 @@ class spell_illidari_council_empyreal_balance : public SpellScriptLoader
                 return GetCaster()->GetTypeId() == TYPEID_UNIT;
             }
 
-            void HandleDummy(SpellEffIndex effIndex)
+            void HandleDummy(SpellEffIndex effIndex, int32& damage)
             {
                 PreventHitDefaultEffect(effIndex);
                 if (Unit* target = GetHitUnit())
@@ -616,8 +620,8 @@ class spell_illidari_council_empyreal_balance : public SpellScriptLoader
                 }
 
                 float pct = (_sharedHealth / _sharedHealthMax) * 100.0f;
-                std::list<Spell::TargetInfo> const* targetsInfo = GetSpell()->GetUniqueTargetInfo();
-                for (std::list<Spell::TargetInfo>::const_iterator ihit = targetsInfo->begin(); ihit != targetsInfo->end(); ++ihit)
+                std::vector<Spell::TargetInfo> targetsInfo = GetSpell()->GetUniqueTargetInfo();
+                for (std::vector<Spell::TargetInfo>::const_iterator ihit = targetsInfo.begin(); ihit != targetsInfo.end(); ++ihit)
                     if (Creature* target = ObjectAccessor::GetCreature(*GetCaster(), ihit->TargetGUID))
                     {
                         target->LowerPlayerDamageReq(target->GetMaxHealth());
@@ -676,37 +680,50 @@ class spell_illidari_council_reflective_shield : public SpellScriptLoader
 
 class spell_illidari_council_judgement : public SpellScriptLoader
 {
-    public:
-        spell_illidari_council_judgement() : SpellScriptLoader("spell_illidari_council_judgement") { }
+public:
+    spell_illidari_council_judgement() : SpellScriptLoader("spell_illidari_council_judgement") { }
 
-        class spell_illidari_council_judgement_SpellScript : public SpellScript
+    class spell_illidari_council_judgement_SpellScript : public SpellScript
+    {
+        PrepareSpellScript(spell_illidari_council_judgement_SpellScript);
+
+        bool Validate(SpellInfo const* /*spellInfo*/) override
         {
-            PrepareSpellScript(spell_illidari_council_judgement_SpellScript);
-
-            void HandleScriptEffect(SpellEffIndex /*effIndex*/)
-            {
-                Unit::AuraEffectList const& auras = GetCaster()->GetAuraEffectsByType(SPELL_AURA_DUMMY);
-                for (Unit::AuraEffectList::const_iterator i = auras.begin(); i != auras.end(); ++i)
+            return ValidateSpellInfo(
                 {
-                    if ((*i)->GetSpellInfo()->GetSpellSpecific() == SPELL_SPECIFIC_SEAL && (*i)->GetEffIndex() == EFFECT_2)
-                        if (sSpellMgr->GetSpellInfo((*i)->GetAmount()))
-                        {
-                            GetCaster()->CastSpell(GetHitUnit(), (*i)->GetAmount(), true);
-                            break;
-                        }
-                }
-            }
-
-            void Register()
-            {
-                OnEffectHitTarget += SpellEffectFn(spell_illidari_council_judgement_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
-            }
-        };
-
-        SpellScript* GetSpellScript() const
-        {
-            return new spell_illidari_council_judgement_SpellScript();
+                    SPELL_JUDGEMENT_OF_BLOOD,
+                    SPELL_JUDGEMENT_OF_COMMAND,
+                    SPELL_JUDGEMENT_PRIMER
+                });
         }
+
+        void HandleScript(SpellEffIndex /*effIndex*/)
+        {
+            Unit* caster = GetCaster();
+            Unit* target = GetHitUnit();
+            uint32 judgementId = caster->HasAura(SPELL_SEAL_OF_BLOOD) ? SPELL_JUDGEMENT_OF_BLOOD : SPELL_JUDGEMENT_OF_COMMAND;
+            caster->CastSpell(target, SPELL_JUDGEMENT_PRIMER, true);
+            caster->CastSpell(target, judgementId, true);
+        }
+
+        void OnFinishCast()
+        {
+            if (Creature* caster = GetCaster()->ToCreature())
+                caster->AI()->Talk(SAY_COUNCIL_SPECIAL);
+        }
+
+        void Register() override
+        {
+            // @todo
+            // OnEffectHitTarget += SpellEffectFn(spell_illidari_council_judgement_SpellScript::HandleScript, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+            AfterCast += SpellCastFn(spell_illidari_council_judgement_SpellScript::OnFinishCast);
+        }
+    };
+
+    SpellScript* GetSpellScript() const override
+    {
+        return new spell_illidari_council_judgement_SpellScript();
+    }
 };
 
 class spell_illidari_council_deadly_strike : public SpellScriptLoader

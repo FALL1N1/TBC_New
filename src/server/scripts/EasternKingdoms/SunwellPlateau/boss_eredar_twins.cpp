@@ -468,7 +468,7 @@ class spell_eredar_twins_blaze : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_eredar_twins_blaze_SpellScript::HandleScript, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
+                // @todo OnEffectHitTarget += SpellEffectFn(spell_eredar_twins_blaze_SpellScript::HandleScript, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 

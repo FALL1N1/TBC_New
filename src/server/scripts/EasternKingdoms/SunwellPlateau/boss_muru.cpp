@@ -177,7 +177,7 @@ public:
             events.ScheduleEvent(EVENT_SPAWN_DARKNESS, 10000);
         }
 
-        void SetData(uint32 type, uint32 data)
+        void SetData(uint32 type, uint32 data, Unit* /*who*/) override
         {
             if (type == DATA_ENRAGE_TIMER)
                 events.ScheduleEvent(EVENT_SPELL_ENRAGE, data);
@@ -392,10 +392,11 @@ class spell_entropius_negative_energy : public SpellScriptLoader
 
             void FilterTargets(std::list<WorldObject*>& targets)
             {
-                Trinity::Containers::RandomResizeList(targets, GetCaster()->GetAI()->GetData(DATA_NEGATIVE_ENERGY_TARGETS));
+                //Trinity::Containers::RandomResizeList(targets, GetCaster()->GetAI()->GetData(DATA_NEGATIVE_ENERGY_TARGETS));
+                Trinity::Containers::RandomResize(targets, GetCaster()->GetAI()->GetData(DATA_NEGATIVE_ENERGY_TARGETS));
             }
 
-            void HandleScriptEffect(SpellEffIndex effIndex)
+            void HandleDummy(SpellEffIndex effIndex, int32& damage)
             {
                 PreventHitDefaultEffect(effIndex);
                 if (Unit* target = GetHitUnit())
@@ -405,7 +406,7 @@ class spell_entropius_negative_energy : public SpellScriptLoader
             void Register()
             {
                 OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_entropius_negative_energy_SpellScript::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
-                OnEffectHitTarget += SpellEffectFn(spell_entropius_negative_energy_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_entropius_negative_energy_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 
@@ -475,12 +476,14 @@ class spell_entropius_black_hole_effect : public SpellScriptLoader
                 float speedXY = float(GetSpellInfo()->Effects[effIndex].MiscValue) * 0.1f;
                 float speedZ = target->GetDistance(pos) / speedXY * 0.5f * Movement::gravity;
 
-                target->GetMotionMaster()->MoveJump(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), speedXY, speedZ);
+                // @todo
+                //target->GetMotionMaster()->MoveJump(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), speedXY, speedZ);
             }
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_entropius_black_hole_effect_SpellScript::HandlePull, EFFECT_0, SPELL_EFFECT_PULL_TOWARDS_DEST);
+                // @todo
+                // OnEffectHitTarget += SpellEffectFn(spell_entropius_black_hole_effect_SpellScript::HandlePull, EFFECT_0, SPELL_EFFECT_PULL_TOWARDS_DEST);
             }
         };
 

@@ -666,9 +666,9 @@ void MotionMaster::MoveLand(uint32 id, Position const& pos)
 
     Movement::MoveSplineInit init(_owner);
     init.MoveTo(PositionToVector3(pos));
-#ifdef LICH_KING
-    init.SetAnimation(Movement::ToGround);
-#endif
+ 
+    //init.SetAnimation(Movement::ToGround);
+ 
     Add(new GenericMovementGenerator(std::move(init), EFFECT_MOTION_TYPE, id));
 }
 
@@ -678,16 +678,16 @@ void MotionMaster::MoveTakeoff(uint32 id, Position const& pos)
 
     Movement::MoveSplineInit init(_owner);
     init.MoveTo(PositionToVector3(pos));
-#ifdef LICH_KING
-    init.SetAnimation(Movement::ToFly);
-#endif
+ 
+    //init.SetAnimation(Movement::ToFly);
+ 
     Add(new GenericMovementGenerator(std::move(init), EFFECT_MOTION_TYPE, id));
 }
 
 void MotionMaster::MoveKnockbackFrom(float srcX, float srcY, float speedXY, float speedZ)
 {
 //BC creatures can't be knocked back
-#ifdef LICH_KING
+ 
     // this function may make players fall below map
     if (_owner->GetTypeId() == TYPEID_PLAYER)
         return;
@@ -695,23 +695,23 @@ void MotionMaster::MoveKnockbackFrom(float srcX, float srcY, float speedXY, floa
     if (speedXY <= 0.1f)
         return;
 
-    float x, y, z;
+    //float x, y, z;
     float moveTimeHalf = speedZ / Movement::gravity;
     float dist = 2 * moveTimeHalf * speedXY;
     float max_height = -Movement::computeFallElevation(moveTimeHalf, false, -speedZ);
 
-    _owner->GetNearPoint(_owner, x, y, z, _owner->GetCombatReach(), dist, _owner->GetAbsoluteAngle(srcX, srcY) + M_PI);
+    //_owner->GetNearPoint(_owner, x, y, z, _owner->GetCombatReach(), dist, _owner->GetAbsoluteAngle(srcX, srcY) + M_PI);
 
     Movement::MoveSplineInit init(_owner);
-    init.MoveTo(x, y, z);
-    init.SetParabolic(max_height, 0);
-    init.SetOrientationFixed(true);
+    //init.MoveTo(x, y, z);
+    //init.SetParabolic(max_height, 0);
+    //init.SetOrientationFixed(true);
     init.SetVelocity(speedXY);
 
     GenericMovementGenerator* movement = new GenericMovementGenerator(std::move(init), EFFECT_MOTION_TYPE, 0);
     movement->Priority = MOTION_PRIORITY_HIGHEST;
     Add(movement);
-#endif
+ 
 }
 
 void MotionMaster::MoveFall(uint32 id /*=0*/)

@@ -64,57 +64,21 @@ class instance_sunwell_plateau : public InstanceMapScript
                             return player;
                     }
                 }
-                //else
-                //    TC_LOG_DEBUG("scripts", "Instance Sunwell Plateau: GetPlayerInMap, but PlayerList is empty!");
+                else TC_LOG_ERROR("scripts", "Instance Sunwell Plateau: GetPlayerInMap, but PlayerList is empty!");
 
                 return NULL;
             }
 
             void OnCreatureCreate(Creature* creature)
             {
+                InstanceScript::OnCreatureCreate(creature);
+
                 // GetDBTableGUIDLow
-                if (creature->GetGUID() > 0 || !IS_PLAYER_GUID(creature->GetOwnerGUID()))
+                if (creature->GetGUID() > 0 || !creature->GetOwnerGUID().IsPlayer())
                     creature->CastSpell(creature, SPELL_SUNWELL_RADIANCE, true);
 
                 switch (creature->GetEntry())
-                {
-                    case NPC_KALECGOS:
-                        KalecgosDragonGUID = creature->GetGUID();
-                        break;
-                    case NPC_SATHROVARR:
-                        SathrovarrGUID = creature->GetGUID();
-                        break;
-                    case NPC_BRUTALLUS:
-                        BrutallusGUID = creature->GetGUID();
-                        break;
-                    case NPC_MADRIGOSA:
-                        MadrigosaGUID = creature->GetGUID();
-                        break;
-                    case NPC_FELMYST:
-                        FelmystGUID = creature->GetGUID();
-                        break;
-                    case NPC_GRAND_WARLOCK_ALYTHESS:
-                        AlythessGUID = creature->GetGUID();
-                        break;
-                    case NPC_LADY_SACROLASH:
-                        SacrolashGUID = creature->GetGUID();
-                        break;
-                    case NPC_MURU:
-                        MuruGUID = creature->GetGUID();
-                        break;
-                    case NPC_KILJAEDEN:
-                        KilJaedenGUID = creature->GetGUID();
-                        break;
-                    case NPC_KILJAEDEN_CONTROLLER:
-                        KilJaedenControllerGUID = creature->GetGUID();
-                        break;
-                    case NPC_ANVEENA:
-                        AnveenaGUID = creature->GetGUID();
-                        break;
-                    case NPC_KALECGOS_KJ:
-                        KalecgosKjGUID = creature->GetGUID();
-                        break;
-
+                { 
                     // Xinef: Felmyst encounter
                     case NPC_DEMONIC_VAPOR_TRAIL:
                     case NPC_UNYIELDING_DEAD:
@@ -145,6 +109,8 @@ class instance_sunwell_plateau : public InstanceMapScript
 
             void OnGameObjectCreate(GameObject* go)
             {
+                InstanceScript::OnGameObjectCreate(go);
+
                 switch (go->GetEntry())
                 {
                     case GO_FORCE_FIELD:

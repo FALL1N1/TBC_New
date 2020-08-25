@@ -65,7 +65,7 @@ class boss_supremus : public CreatureScript
             {
                 events.CancelEventGroup(EVENT_GROUP_ABILITIES);
                 events.ScheduleEvent(EVENT_SWITCH_PHASE, 60000);
-                DoResetThreat();
+                me->GetThreatManager().ResetAllThreat();
 
                 if (!run)
                 {
@@ -96,9 +96,8 @@ class boss_supremus : public CreatureScript
                 if (summon->GetEntry() == NPC_SUPREMUS_PUNCH_STALKER)
                 {
                     summon->ToTempSummon()->InitStats(20000);
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
-                        //summon->GetMotionMaster()->MoveFollow(target, 0.0f, 0.0f, MOTION_SLOT_ACTIVE);
-                        summon->GetMotionMaster()->MoveFollow(target, 0.0f, 0.0f, MOTION_SLOT_CONTROLLED);
+                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true)) 
+                        summon->GetMotionMaster()->MoveFollow(target, 0.0f, 0.0f, MOTION_SLOT_ACTIVE); // MOTION_SLOT_CONTROLLED
                 }
                 else
                     summon->CastSpell(summon, SPELL_VOLCANIC_ERUPTION_TRIGGER, true);
@@ -111,14 +110,20 @@ class boss_supremus : public CreatureScript
 
             Unit* FindHatefulStrikeTarget()
             {
-                Unit* target = NULL;
-                ThreatContainer::StorageType const &threatlist = me->getThreatManager().getThreatList();
-                for (ThreatContainer::StorageType::const_iterator i = threatlist.begin(); i != threatlist.end(); ++i)
+                uint32 health = 0;
+                Unit* target = nullptr;
+
+                for (auto* ref : me->GetThreatManager().GetUnsortedThreatList())
                 {
-                    Unit* unit = ObjectAccessor::GetUnit(*me, (*i)->getUnitGuid());
-                    if (unit && me->IsWithinMeleeRange(unit))
-                        if (!target || unit->GetHealth() > target->GetHealth())
+                    Unit* unit = ref->GetVictim();
+                    if (me->IsWithinMeleeRange(unit))
+                    {
+                        if (unit->GetHealth() > health)
+                        {
+                            health = unit->GetHealth();
                             target = unit;
+                        }
+                    }
                 }
 
                 return target;
@@ -154,7 +159,7 @@ class boss_supremus : public CreatureScript
                     case EVENT_SWITCH_TARGET:
                         if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
                         {
-                            DoResetThreat();
+                            me->GetThreatManager().ResetAllThreat();
                             me->GetThreatManager().AddThreat(target, 5000000.0f);
                             Talk(EMOTE_NEW_TARGET);
                         }

@@ -179,7 +179,7 @@ public:
                 if (Creature* Sath = ObjectAccessor::GetCreature(*me, instance->GetGuidData(NPC_SATHROVARR)))
                 {
                     Sath->RemoveAllAuras();
-                    Sath->GetMotionMaster()->MovementExpired();
+                    //Sath->GetMotionMaster()->MovementExpired(); 
                     Sath->SetReactState(REACT_PASSIVE);
                     Sath->NearTeleportTo(1696.20f, 915.0f, DRAGON_REALM_Z, Sath->GetOrientation());
                 }
@@ -226,7 +226,7 @@ public:
             switch (events2.ExecuteEvent())
             {
                 case EVENT_TALK_GOOD_1:
-                    me->SetRegeneratingHealth(false);
+                    me->setRegeneratingHealth(false);
                     me->RemoveAllAuras();
                     me->SetReactState(REACT_PASSIVE);
                     me->CombatStop();
@@ -629,10 +629,11 @@ public:
         void FilterTargets(std::list<WorldObject*>& targets)
         {
             targets.remove_if(SpectralBlastCheck(GetCaster()->GetVictim()));
-            Trinity::Containers::RandomResizeList(targets, 1);
+            //Trinity::Containers::RandomResizeList(targets, 1);
+            Trinity::Containers::RandomResize(targets, 1);
         }            
         
-        void HandleDummy(SpellEffIndex effIndex)
+        void HandleDummy(SpellEffIndex effIndex, int32& damage)
         {
             PreventHitDefaultEffect(effIndex);
             if (Unit* target = GetHitUnit())
@@ -708,7 +709,7 @@ class spell_kalecgos_spectral_realm_dummy : public SpellScriptLoader
                 return SPELL_CAST_OK;
             }
 
-            void HandleScriptEffect(SpellEffIndex effIndex)
+            void HandleDummy(SpellEffIndex effIndex, int32& damage)
             {
                 PreventHitDefaultEffect(effIndex);
                 GetCaster()->CastSpell(GetCaster(), SPELL_TELEPORT_SPECTRAL, true);
@@ -717,7 +718,7 @@ class spell_kalecgos_spectral_realm_dummy : public SpellScriptLoader
             void Register()
             {
                 OnCheckCast += SpellCheckCastFn(spell_kalecgos_spectral_realm_dummy_SpellScript::CheckCast);
-                OnEffectHitTarget += SpellEffectFn(spell_kalecgos_spectral_realm_dummy_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_kalecgos_spectral_realm_dummy_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 

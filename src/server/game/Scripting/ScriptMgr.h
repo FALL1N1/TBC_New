@@ -48,7 +48,15 @@ class SpellScript;
 class AuraScript;
 class ModuleReference;
 class TestCase;
-class OutdoorPvP;
+class OutdoorPvP; 
+
+template<class ArgumentType, class ResultType>
+struct spp_unary_function
+{
+    typedef ArgumentType argument_type;
+    typedef ResultType result_type;
+};
+
 
 class TC_GAME_API ScriptObject
 {

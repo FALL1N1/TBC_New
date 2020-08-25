@@ -141,6 +141,10 @@ struct TC_GAME_API Position
     float GetAbsoluteAngle(Position const* pos) const { return GetAbsoluteAngle(*pos); }
     float ToAbsoluteAngle(float relAngle) const { return NormalizeOrientation(relAngle + m_orientation); }
 
+
+    float GetAngle(const Position* pos) const;
+    float GetAngle(float x, float y) const; 
+
     float GetRelativeAngle(float x, float y) const { return GetAbsoluteAngle(x, y) - m_orientation; }
     float GetRelativeAngle(Position const& pos) const { return ToRelativeAngle(GetAbsoluteAngle(pos)); }
     float GetRelativeAngle(Position const* pos) const { return ToRelativeAngle(GetAbsoluteAngle(pos)); }

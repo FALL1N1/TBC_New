@@ -273,6 +273,7 @@ void InstanceSaveManager::LoadInstances()
 
 void InstanceSaveManager::LoadResetTimes()
 {
+	return;
     time_t now = WorldGameTime::GetGameTime();
     time_t today = (now / DAY) * DAY;
 

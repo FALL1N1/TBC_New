@@ -154,11 +154,6 @@ class TC_GAME_API MotionMaster
         void MoveCharge(float x, float y, float z, float speed = SPEED_CHARGE, uint32 id = EVENT_CHARGE, bool generatePath = false);
         void MoveCharge(PathGenerator const& path, float speed = SPEED_CHARGE, Unit* target = nullptr);
         void MoveKnockbackFrom(float srcX, float srcY, float speedXY, float speedZ);
-#ifdef LICH_KING
-        void MoveJumpTo(float angle, float speedXY, float speedZ);
-        void MoveJump(Position const& pos, float speedXY, float speedZ, uint32 id = EVENT_JUMP, bool hasOrientation = false);
-        void MoveJump(float x, float y, float z, float o, float speedXY, float speedZ, uint32 id = EVENT_JUMP, bool hasOrientation = false);
-#endif
         void MoveFall(uint32 id = 0);
 
         void MoveSeekAssistance(float x, float y, float z);

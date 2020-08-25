@@ -3622,3 +3622,11 @@ VendorItemCount::VendorItemCount(uint32 _item, uint32 _count) :
     count(_count), 
     lastIncrementTime(WorldGameTime::GetGameTime())
 {}
+
+void Creature::SetPosition(float x, float y, float z, float o)
+{ 
+    if (!Trinity::IsValidMapCoord(x, y, z, o))
+        return;
+
+    GetMap()->CreatureRelocation(this, x, y, z, o);
+}
