@@ -313,7 +313,7 @@ class npc_harrison_jones : public CreatureScript
                                 me->SetFacingTo(6.235659f);
                                 Talk(SAY_HARRISON_1);
                                 DoCast(me, SPELL_BANGING_THE_GONG);
-                                me->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 0, uint32(WEAPON_MACE));
+                                // @todo me->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 0, uint32(WEAPON_MACE));
                                 me->SetSheath(SHEATH_STATE_MELEE);
                                 _gongEvent = GONG_EVENT_3;
                                 _gongTimer = 4000;
@@ -354,7 +354,7 @@ class npc_harrison_jones : public CreatureScript
                                 _gongEvent = GONG_EVENT_6;
                                 break;
                             case GONG_EVENT_6:
-                                me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_USE_STANDING);
+                                // @todo me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_USE_STANDING);
                                 Talk(SAY_HARRISON_3);
                                 _gongTimer = 7000;
                                 _gongEvent = GONG_EVENT_7;
@@ -372,7 +372,7 @@ class npc_harrison_jones : public CreatureScript
                                             {
                                                 if (ptarget->GetPositionX() > 120)
                                                 {
-                                                    ptarget->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 0, uint32(WEAPON_SPEAR));
+                                                    // @todo ptarget->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 0, uint32(WEAPON_SPEAR));
                                                     ptarget->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC);
                                                     ptarget->SetReactState(REACT_PASSIVE);
                                                     ptarget->AI()->SetData(0, 1);
@@ -395,7 +395,7 @@ class npc_harrison_jones : public CreatureScript
                                 break;
                             case GONG_EVENT_8:
                                 DoCast(me, SPELL_STEALTH);
-                                me->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 0, uint32(0));
+                                // @todo me->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 0, uint32(0));
                                 me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_ONESHOT_NONE);
                                 me->GetMotionMaster()->MovePath(HARRISON_MOVE_3, false);
                                 _gongTimer = 1000;

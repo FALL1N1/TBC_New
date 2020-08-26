@@ -72,7 +72,7 @@ class startFollow : public BasicEvent
         {
             if (InstanceScript* instance = _owner->GetInstanceScript())
                 if (Creature* vashj = ObjectAccessor::GetCreature(*_owner, instance->GetObjectGuid(NPC_LADY_VASHJ)))
-                    _owner->GetMotionMaster()->MoveFollow(vashj, 3.0f, vashj->GetAngle(_owner), MOTION_SLOT_CONTROLLED);
+                    _owner->GetMotionMaster()->MoveFollow(vashj, 3.0f, vashj->GetAngle(_owner), MOTION_SLOT_ACTIVE); // @todo MOTION_SLOT_CONTROLLED
             return true;
         }
 
@@ -121,9 +121,9 @@ class boss_lady_vashj : public CreatureScript
                 BossAI::JustDied(killer);
             }
 
-            void EnterCombat(Unit* who)
+            void JustEngagedWith(Unit* who)
             {
-                BossAI::EnterCombat(who);
+                BossAI::JustEngagedWith(who);
                 Talk(SAY_AGGRO);
 
                 me->CastSpell(me, SPELL_REMOVE_TAINTED_CORES, true);
@@ -253,7 +253,7 @@ class boss_lady_vashj : public CreatureScript
                         break;
                 }
 
-                if (me->GetReactState() != REACT_AGGRESSIVE || !me->isAttackReady())
+                if (me->GetReactState() != REACT_AGGRESSIVE || !me->IsAttackReady())
                     return;
 
                 if (!me->IsWithinMeleeRange(me->GetVictim()))
@@ -413,7 +413,7 @@ class spell_lady_vashj_remove_tainted_cores : public SpellScriptLoader
         {
             PrepareSpellScript(spell_lady_vashj_remove_tainted_cores_SpellScript);
 
-            void HandleScriptEffect(SpellEffIndex effIndex)
+            void HandleDummy(SpellEffIndex effIndex, int32 &dmg)
             {
                 PreventHitDefaultEffect(effIndex);
                 if (Player* target = GetHitPlayer())
@@ -422,7 +422,7 @@ class spell_lady_vashj_remove_tainted_cores : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_lady_vashj_remove_tainted_cores_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_lady_vashj_remove_tainted_cores_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 
@@ -441,7 +441,7 @@ class spell_lady_vashj_summon_sporebat : public SpellScriptLoader
         {
             PrepareSpellScript(spell_lady_vashj_summon_sporebat_SpellScript);
 
-            void HandleScriptEffect(SpellEffIndex effIndex)
+            void HandleDummy(SpellEffIndex effIndex, int32 &dmg)
             {
                 PreventHitDefaultEffect(effIndex);
                 GetCaster()->CastSpell(GetCaster(), RAND(SPELL_SUMMON_SPOREBAT1, SPELL_SUMMON_SPOREBAT2, SPELL_SUMMON_SPOREBAT3, SPELL_SUMMON_SPOREBAT4), true);
@@ -449,7 +449,7 @@ class spell_lady_vashj_summon_sporebat : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_lady_vashj_summon_sporebat_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_lady_vashj_summon_sporebat_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 
@@ -468,16 +468,17 @@ class spell_lady_vashj_spore_drop_effect : public SpellScriptLoader
         {
             PrepareSpellScript(spell_lady_vashj_spore_drop_effect_SpellScript);
 
-            void HandleScriptEffect(SpellEffIndex effIndex)
+            void HandleDummy(SpellEffIndex effIndex, int32 &dmg)
             {
                 PreventHitDefaultEffect(effIndex);
+                // @todo
                 if (Unit* target = GetHitUnit())
-                    target->CastSpell(target, SPELL_TOXIC_SPORES, true, NULL, NULL, GetCaster()->GetGUID());
+                    target->CastSpell(target, SPELL_TOXIC_SPORES, true); // , NULL, NULL, GetCaster()->GetGUID());
             }
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_lady_vashj_spore_drop_effect_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_lady_vashj_spore_drop_effect_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 

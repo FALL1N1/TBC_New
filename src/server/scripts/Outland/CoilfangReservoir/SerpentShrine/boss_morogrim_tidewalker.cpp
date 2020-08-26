@@ -93,9 +93,9 @@ class boss_morogrim_tidewalker : public CreatureScript
                 BossAI::JustDied(killer);
             }
 
-            void EnterCombat(Unit* who)
+            void JustEngagedWith(Unit* who)
             {
-                BossAI::EnterCombat(who);
+                BossAI::JustEngagedWith(who);
                 Talk(SAY_AGGRO);
 
                 events.ScheduleEvent(EVENT_SPELL_TIDAL_WAVE, 10000);
@@ -166,7 +166,7 @@ class spell_morogrim_tidewalker_watery_grave : public SpellScriptLoader
                 return true;
             }
 
-            void HandleDummy(SpellEffIndex effIndex)
+            void HandleDummy(SpellEffIndex effIndex, int32 &dmg)
             {
                 PreventHitDefaultEffect(effIndex);
                 if (Unit* target = GetHitUnit())
@@ -200,21 +200,21 @@ class spell_morogrim_tidewalker_water_globule_new_target : public SpellScriptLoa
 
             void FilterTargets(std::list<WorldObject*>& unitList)
             {
-                Trinity::Containers::RandomResizeList(unitList, 1);
+                Trinity::Containers::RandomResize(unitList, 1); 
             }
 
-            void HandleDummy(SpellEffIndex effIndex)
+            void HandleDummy(SpellEffIndex effIndex, int32 &dmg)
             {
                 PreventHitDefaultEffect(effIndex);
 
                 // Xinef: if we have target we currently follow, return
                 if (Unit* target = GetCaster()->GetVictim())
-                    if (GetCaster()->getThreatManager().getThreat(target) >= 100000.0f)
+                    if (GetCaster()->GetThreatManager().GetThreat(target) >= 100000.0f)
                         return;
 
                 // Xinef: acquire new target
                 if (Unit* target = GetHitUnit())
-                    GetCaster()->AddThreat(target, 1000000.0f);
+                    GetCaster()->GetThreatManager().AddThreat(target, 1000000.0f);
             }
 
             void Register()

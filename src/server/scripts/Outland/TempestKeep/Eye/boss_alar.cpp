@@ -96,7 +96,7 @@ class boss_alar : public CreatureScript
                 BossAI::Reset();
                 platform = 0;
                 noQuillTimes = 0;
-                me->SetModelVisible(true);
+                me->SetImmuneToAll(true);
                 me->ApplySpellImmune(0, IMMUNITY_DAMAGE, SPELL_SCHOOL_MASK_FIRE, true);
                 me->SetReactState(REACT_AGGRESSIVE);
             }
@@ -109,7 +109,7 @@ class boss_alar : public CreatureScript
 
             void JustDied(Unit* killer)
             {
-                me->SetModelVisible(true);
+                me->SetImmuneToAll(true);
                 BossAI::JustDied(killer);
 
                 // Xinef: Ruse of the Ashtongue (10946)
@@ -132,7 +132,7 @@ class boss_alar : public CreatureScript
 
             void MoveInLineOfSight(Unit* /*who*/) { }
 
-            void DamageTaken(Unit*, uint32& damage, DamageEffectType, SpellSchoolMask)
+            void DamageTaken(Unit*, uint32& damage) override
             {
                 if (damage >= me->GetHealth() && platform < POINT_MIDDLE)
                 {
@@ -157,7 +157,8 @@ class boss_alar : public CreatureScript
             {
                 if (type != POINT_MOTION_TYPE)
                 {
-                    if (type == ESCORT_MOTION_TYPE && me->movespline->Finalized() && !me->IsInCombat())
+                    //if (type == ESCORT_MOTION_TYPE && me->movespline->Finalized() && !me->IsInCombat())
+                    if (me->movespline->Finalized() && !me->IsInCombat()) 
                         startPath = true;
                     return;
                 }
@@ -183,12 +184,20 @@ class boss_alar : public CreatureScript
                     {
                         Movement::PointsArray pathPoints;
                         pathPoints.push_back(G3D::Vector3(me->GetPositionX(), me->GetPositionY(), me->GetPositionZ()));
-                        for (uint8 i = 0; i < i_path->size(); ++i)
+                        for (WaypointNode const& value : i_path->nodes)
                         {
-                            WaypointData const* node = i_path->at(i);
-                            pathPoints.push_back(G3D::Vector3(node->x, node->y, node->z));
+                            WaypointNode node = value;
+                            Trinity::NormalizeMapCoord(node.x);
+                            Trinity::NormalizeMapCoord(node.y);
+
+                            pathPoints.push_back(G3D::Vector3(node.x, node.y, node.z));
                         }
-                        me->GetMotionMaster()->MoveSplinePath(&pathPoints);
+
+
+
+                        // repeatable, no smoothness
+                        // unsure @todo
+                        me->GetMotionMaster()->MovePath(i_path->id, true, false);
                     }
                 }
 
@@ -286,7 +295,7 @@ class boss_alar : public CreatureScript
                         break;
                     }
                     case EVENT_REBIRTH_DIVE:
-                        me->SetModelVisible(true);
+                        me->SetImmuneToAll(true);
                         me->CastSpell(me, SPELL_REBIRTH_DIVE, false);
                         break;
                     case EVENT_FINISH_DIVE:
@@ -305,9 +314,10 @@ class boss_alar : public CreatureScript
                         me->ResetAttackTimer();
                     }
                     else
-                    {
+                    { 
                         me->ResetAttackTimer();
-                        ThreatContainer::StorageType const &threatList = me->getThreatManager().getThreatList();
+                        // @todo
+                        /*ThreatContainer::StorageType const &threatList = me->getThreatManager().getThreatList();
                         for (ThreatContainer::StorageType::const_iterator itr = threatList.begin(); itr != threatList.end(); ++itr)
                             if (Unit* unit = ObjectAccessor::GetUnit(*me, (*itr)->getUnitGuid()))
                                 if (me->IsWithinMeleeRange(unit))
@@ -315,6 +325,7 @@ class boss_alar : public CreatureScript
                                     me->AttackerStateUpdate(unit);
                                     return;
                                 }
+                        */
 
                         me->CastSpell(me, SPELL_FLAME_BUFFET, false);
                     }
@@ -388,7 +399,7 @@ class spell_alar_ember_blast : public SpellScriptLoader
         {
             PrepareSpellScript(spell_alar_ember_blast_SpellScript);
 
-            void HandleForceCast(SpellEffIndex effIndex)
+            void HandleDummy(SpellEffIndex effIndex, int32 &dmg)
             {
                 PreventHitEffect(effIndex);
                 if (InstanceScript* instance = GetCaster()->GetInstanceScript())
@@ -398,7 +409,7 @@ class spell_alar_ember_blast : public SpellScriptLoader
 
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_alar_ember_blast_SpellScript::HandleForceCast, EFFECT_2, SPELL_EFFECT_FORCE_CAST);
+                OnEffectHitTarget += SpellEffectFn(spell_alar_ember_blast_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_FORCE_CAST);
             }
         };
 
@@ -427,8 +438,10 @@ class spell_alar_ember_blast_death : public SpellScriptLoader
 
                 GetUnitOwner()->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                 GetUnitOwner()->SetStandState(UNIT_STAND_STATE_DEAD);
-                GetUnitOwner()->m_last_notify_position.Relocate(0.0f, 0.0f, 0.0f);
-                GetUnitOwner()->m_delayed_unit_relocation_timer = 1000;
+                
+                // @todo
+                //GetUnitOwner()->m_last_notify_position.Relocate(0.0f, 0.0f, 0.0f);
+                //GetUnitOwner()->m_delayed_unit_relocation_timer = 1000;
             }
 
             void OnRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -461,7 +474,7 @@ class spell_alar_dive_bomb : public SpellScriptLoader
 
             void OnApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
             {
-                GetUnitOwner()->SetModelVisible(false);
+                GetUnitOwner()->SetImmuneToAll(false); 
                 GetUnitOwner()->SetDisplayId(DISPLAYID_INVISIBLE);
             }
 

@@ -66,7 +66,7 @@ class boss_high_astromancer_solarian : public CreatureScript
             void Reset()
             {
                 BossAI::Reset();
-                me->SetModelVisible(true);
+                me->SetImmuneToAll(true);
             }
 
             void AttackStart(Unit* who)
@@ -83,7 +83,7 @@ class boss_high_astromancer_solarian : public CreatureScript
 
             void JustDied(Unit* killer)
             {
-                me->SetModelVisible(true);
+                me->SetImmuneToAll(true);
                 Talk(SAY_DEATH);
                 BossAI::JustDied(killer);
             }
@@ -147,7 +147,7 @@ class boss_high_astromancer_solarian : public CreatureScript
                         break;
                     case EVENT_SPAWN_PORTALS:
                         me->SetAttackTimer(BASE_ATTACK, 21000);
-                        me->SetModelVisible(false);
+                        me->SetImmuneToAll(false);
                         events.ScheduleEvent(EVENT_SPAWN_PORTALS, 50000);
                         events.DelayEvents(21000);
                         events.ScheduleEvent(EVENT_SUMMON_ADDS, 6000);
@@ -188,7 +188,7 @@ class boss_high_astromancer_solarian : public CreatureScript
                                 {
                                     light->RemoveAllAuras();
                                     if (light->GetDistance2d(CENTER_X, CENTER_Y) < 20.0f)
-                                        me->SetModelVisible(true);
+                                        me->SetImmuneToAll(true);
                                     else
                                         me->SummonCreature(NPC_SOLARIUM_PRIEST, light->GetPositionX()+frand(-3.0f, 3.0f), light->GetPositionY()+frand(-3.0f, 3.0f), light->GetPositionZ(), 0.0f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 10000);
                                 }
@@ -197,7 +197,7 @@ class boss_high_astromancer_solarian : public CreatureScript
                         // protection
                         if (me->GetDisplayId() != me->GetNativeDisplayId())
                         {
-                            me->SetModelVisible(true);
+                            me->SetImmuneToAll(true);
                             me->SummonCreature(NPC_SOLARIUM_PRIEST, me->GetPositionX()+frand(-3.0f, 3.0f), me->GetPositionY()+frand(-3.0f, 3.0f), me->GetPositionZ(), 0.0f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 10000);
                             me->SummonCreature(NPC_SOLARIUM_PRIEST, me->GetPositionX()+frand(-3.0f, 3.0f), me->GetPositionY()+frand(-3.0f, 3.0f), me->GetPositionZ(), 0.0f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 10000);
                         }
@@ -270,12 +270,12 @@ class spell_astromancer_solarian_transform : public SpellScriptLoader
 
             void OnApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
             {
-                GetUnitOwner()->HandleStatModifier(UnitMods(UNIT_MOD_ARMOR), TOTAL_PCT, 400.0f, true);
+                GetUnitOwner()->ApplyStatPctModifier(UnitMods(UNIT_MOD_ARMOR), TOTAL_PCT, 400.0f); 
             }
 
             void OnRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
             {
-                GetUnitOwner()->HandleStatModifier(UnitMods(UNIT_MOD_ARMOR), TOTAL_PCT, 400.0f, false);
+                GetUnitOwner()->ApplyStatPctModifier(UnitMods(UNIT_MOD_ARMOR), TOTAL_PCT, 400.0f);
             }
 
             void Register()
