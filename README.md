@@ -68,19 +68,19 @@ Current progress:
 > Raids
 
 
-[ ] Karazhan
+[x] Karazhan
 
-[ ] Gruul's Lair
+[x] Gruul's Lair
 
-[ ] Magtheridon's Lair
+[x] Magtheridon's Lair
 
-[ ] Zul'Aman
+[x] Zul'Aman
 
-[ ] Serpentshrine Cavern
+[x] Serpentshrine Cavern
 
-[ ] Tempest Keep: The Eye
+[x] Tempest Keep: The Eye
 
-[ ] Battle for Mount Hyjal
+[x] Battle for Mount Hyjal
 
 [x] Black Temple
 
