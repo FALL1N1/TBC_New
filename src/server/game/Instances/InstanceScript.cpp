@@ -153,11 +153,15 @@ void InstanceScript::LoadBossBoundaries(BossBoundaryData const& data)
             bosses[entry.BossId].boundary.push_back(entry.Boundary);
 }
 
-void InstanceScript::LoadMinionData(std::vector<MinionData> const datas)
+void InstanceScript::LoadMinionData(const MinionData* data)
 {
-    for (auto data : datas)
-        if (data.bossId < bosses.size())
-            minions.insert(std::make_pair(data.entry, MinionInfo(&bosses[data.bossId])));
+    while (data->entry)
+    {
+        if (data->bossId < bosses.size())
+            minions.insert(std::make_pair(data->entry, MinionInfo(&bosses[data->bossId])));
+
+        ++data;
+    }
 
     TC_LOG_DEBUG("scripts", "InstanceScript::LoadMinionData: " UI64FMTD " minions loaded.", uint64(minions.size()));
 }
