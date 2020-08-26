@@ -36,6 +36,20 @@ void AddSC_instance_serpentshrine_cavern();
 void AddSC_boss_magtheridon();
 void AddSC_instance_magtheridons_lair(); 
 
+// World Bosses
+void AddSC_boss_doomwalker();
+void AddSC_boss_doomlordkazzak();
+
+// Zones
+void AddSC_zangarmarsh();
+void AddSC_terokkar_forest();
+void AddSC_shattrath_city();
+void AddSC_shadowmoon_valley();
+void AddSC_netherstorm();
+void AddSC_nagrand();
+void AddSC_hellfire_peninsula();
+void AddSC_blades_edge_mountains();
+
 void AddOutlandScripts()
 {
 
@@ -76,4 +90,17 @@ void AddOutlandScripts()
     AddSC_boss_magtheridon();
     AddSC_instance_magtheridons_lair(); 
 
+	// World Bosses
+	AddSC_boss_doomwalker();
+	AddSC_boss_doomlordkazzak();
+
+	// Zones
+	AddSC_zangarmarsh();
+	AddSC_terokkar_forest();
+	AddSC_shattrath_city();
+	AddSC_shadowmoon_valley();
+	AddSC_netherstorm();
+	AddSC_nagrand();
+	AddSC_hellfire_peninsula();
+	AddSC_blades_edge_mountains();
 }

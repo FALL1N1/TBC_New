@@ -1122,6 +1122,7 @@ class TC_GAME_API Creature : public Unit, public GridObject<Creature>, public Ma
 
         std::string GetDebugInfo() const override;
 
+        void ForcedDespawn(uint32 timeMSToDespawn = 0, Seconds forceRespawnTimer = Seconds(0));
     protected:
         bool CreateFromProto(ObjectGuid::LowType guidlow, uint32 Entry, const CreatureData *data = nullptr);
         bool InitEntry(uint32 entry, const CreatureData* data = nullptr);
@@ -1194,7 +1195,6 @@ class TC_GAME_API Creature : public Unit, public GridObject<Creature>, public Ma
         uint32 m_keepActiveTimer;
 
     private:
-        void ForcedDespawn(uint32 timeMSToDespawn = 0, Seconds forceRespawnTimer = Seconds(0));
 
         // Waypoint path
         uint32 _waypointPathId;
