@@ -32,6 +32,10 @@ void AddSC_boss_the_lurker_below();
 void AddSC_boss_morogrim_tidewalker();
 void AddSC_instance_serpentshrine_cavern();
 
+// Magetheridon's Lair
+void AddSC_boss_magtheridon();
+void AddSC_instance_magtheridons_lair(); 
+
 void AddOutlandScripts()
 {
 
@@ -60,12 +64,16 @@ void AddOutlandScripts()
     AddSC_instance_gruuls_lair();
 
     // Serpentshrine Cavern
-	AddSC_boss_lady_vashj();
-	AddSC_boss_hydross_the_unstable();
-	AddSC_boss_fathomlord_karathress();
-	AddSC_boss_leotheras_the_blind();
-	AddSC_boss_the_lurker_below();
-	AddSC_boss_morogrim_tidewalker();
-	AddSC_instance_serpentshrine_cavern();
+    AddSC_boss_lady_vashj();
+    AddSC_boss_hydross_the_unstable();
+    AddSC_boss_fathomlord_karathress();
+    AddSC_boss_leotheras_the_blind();
+    AddSC_boss_the_lurker_below();
+    AddSC_boss_morogrim_tidewalker();
+    AddSC_instance_serpentshrine_cavern();
+    
+    // Magetheridon's Lair
+    AddSC_boss_magtheridon();
+    AddSC_instance_magtheridons_lair(); 
 
 }
