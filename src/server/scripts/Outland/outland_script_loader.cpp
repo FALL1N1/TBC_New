@@ -1,3 +1,26 @@
+// Auchindoun: Sethekk Halls 
+void AddSC_boss_talon_king_ikiss();
+void AddSC_boss_anzu();
+void AddSC_boss_darkweaver_syth();
+void AddSC_instance_sethekk_halls();
+
+// Auchindoun: Auchenai Crypts
+void AddSC_boss_exarch_maladaar();
+void AddSC_boss_shirrak_the_dead_watcher();
+void AddSC_instance_auchenai_crypts();
+
+// Auchindoun: Mana Tombs
+void AddSC_boss_nexusprince_shaffar();
+void AddSC_boss_pandemonius();
+void AddSC_instance_mana_tombs();
+
+// Auchindoun: Shadow Labyrinth
+void AddSC_boss_ambassador_hellmaw();
+void AddSC_boss_blackheart_the_inciter();
+void AddSC_boss_grandmaster_vorpil();
+void AddSC_boss_murmur();
+void AddSC_shadow_labyrinth();
+void AddSC_instance_shadow_labyrinth();
 
 // Black Temple
 void AddSC_instance_black_temple();
@@ -52,6 +75,29 @@ void AddSC_blades_edge_mountains();
 
 void AddOutlandScripts()
 {
+    // Auchindoun: Sethekk Halls 
+    AddSC_boss_talon_king_ikiss();
+    AddSC_boss_anzu();
+    AddSC_boss_darkweaver_syth();
+    AddSC_instance_sethekk_halls();
+
+    // Auchindoun: Auchenai Crypts
+    AddSC_boss_exarch_maladaar();
+    AddSC_boss_shirrak_the_dead_watcher();
+    AddSC_instance_auchenai_crypts();
+
+    // Auchindoun: Mana Tombs
+    AddSC_boss_nexusprince_shaffar();
+    AddSC_boss_pandemonius();
+    AddSC_instance_mana_tombs();
+
+    // Auchindoun: Shadow Labyrinth
+    AddSC_boss_ambassador_hellmaw();
+    AddSC_boss_blackheart_the_inciter();
+    AddSC_boss_grandmaster_vorpil();
+    AddSC_boss_murmur();
+    AddSC_shadow_labyrinth();
+    AddSC_instance_shadow_labyrinth();
 
     // Black Temple
     AddSC_instance_black_temple();

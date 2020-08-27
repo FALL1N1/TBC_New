@@ -241,6 +241,28 @@ public:
     uint32 ExecuteEvent();
 
     /**
+    * @name GetEvent
+    * @brief Returns the next event to execute.
+    * @return Id of the event to execute.
+    */
+    uint32 GetEvent()
+    {
+        while (!Empty())
+        {
+            EventStore::iterator itr = _eventMap.begin();
+
+            if (itr->first > _time)
+                return 0;
+            else if (_phase && (itr->second & 0xFF000000) && !(itr->second & (_phase << 24)))
+                _eventMap.erase(itr);
+            else
+                return (itr->second & 0x0000FFFF);
+        }
+
+        return 0;
+    }
+
+    /**
     * @name DelayEvents
     * @brief Delays all events in the map. If delay is greater than or equal internal timer, delay will be 0.
     * @param delay Amount of delay in ms as std::chrono::duration.
