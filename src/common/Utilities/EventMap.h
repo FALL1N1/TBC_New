@@ -113,6 +113,16 @@ public:
     }
 
     /**
+    * @name PopEvent
+    * @brief Remove the first event in the map.
+    */
+    void PopEvent()
+    {
+        if (!Empty())
+            _eventMap.erase(_eventMap.begin());
+    }
+
+    /**
     * @name ScheduleEvent
     * @brief Creates new event entry in map.
     * @param eventId The id of the new event.

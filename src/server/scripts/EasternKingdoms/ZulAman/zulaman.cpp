@@ -354,7 +354,7 @@ class npc_harrison_jones : public CreatureScript
                                 _gongEvent = GONG_EVENT_6;
                                 break;
                             case GONG_EVENT_6:
-                                // @todo me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_USE_STANDING);
+                                me->SetUInt32Value(UNIT_NPC_EMOTESTATE, ANIM_EMOTE_USE_STANDING);
                                 Talk(SAY_HARRISON_3);
                                 _gongTimer = 7000;
                                 _gongEvent = GONG_EVENT_7;
