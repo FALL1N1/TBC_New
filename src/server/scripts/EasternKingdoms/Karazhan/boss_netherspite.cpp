@@ -1,7 +1,12 @@
 #include "ScriptMgr.h"
-#include "ScriptedCreature.h"
+#include "GameObject.h"
+#include "InstanceScript.h"
 #include "karazhan.h"
+#include "Map.h"
+#include "ObjectAccessor.h"
 #include "Player.h"
+#include "ScriptedCreature.h"
+#include "TemporarySummon.h"
 
 enum Netherspite
 {
@@ -44,7 +49,7 @@ class boss_netherspite : public CreatureScript
 public:
     boss_netherspite() : CreatureScript("boss_netherspite") { }
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetKarazhanAI<boss_netherspiteAI>(creature);
     }
@@ -53,14 +58,21 @@ public:
     {
         boss_netherspiteAI(Creature* creature) : ScriptedAI(creature)
         {
+            Initialize();
             instance = creature->GetInstanceScript();
 
-            for (int i=0; i<3; ++i)
-            {
-                PortalGUID[i].Clear();
-                BeamTarget[i].Clear();
-                BeamerGUID[i].Clear();
-            }
+            PortalPhase = false;
+            PhaseTimer = 0;
+            EmpowermentTimer = 0;
+            PortalTimer = 0;
+        }
+
+        void Initialize()
+        {
+            Berserk = false;
+            NetherInfusionTimer = 540000;
+            VoidZoneTimer = 15000;
+            NetherbreathTimer = 3000;
         }
 
         InstanceScript* instance;
@@ -94,20 +106,17 @@ public:
             if (dist(xn, yn, xh, yh) >= dist(xn, yn, xp, yp) || dist(xp, yp, xh, yh) >= dist(xn, yn, xp, yp))
                 return false;
             // check  distance from the beam
-            return (abs((xn-xp)*yh+(yp-yn)*xh-xn*yp+xp*yn)/dist(xn, yn, xp, yp) < 1.5f);
+            return (std::abs((xn-xp)*yh+(yp-yn)*xh-xn*yp+xp*yn)/dist(xn, yn, xp, yp) < 1.5f);
         }
 
         float dist(float xa, float ya, float xb, float yb) // auxiliary method for distance
         {
-            return sqrt((xa-xb)*(xa-xb) + (ya-yb)*(ya-yb));
+            return std::sqrt((xa-xb)*(xa-xb) + (ya-yb)*(ya-yb));
         }
 
-        void Reset()
+        void Reset() override
         {
-            Berserk = false;
-            NetherInfusionTimer = 540000;
-            VoidZoneTimer = 15000;
-            NetherbreathTimer = 3000;
+            Initialize();
 
             HandleDoors(true);
             DestroyPortals();
@@ -115,16 +124,16 @@ public:
 
         void SummonPortals()
         {
-            uint8 r = rand()%4;
+            uint8 r = rand32() % 4;
             uint8 pos[3];
             pos[RED_PORTAL] = ((r % 2) ? (r > 1 ? 2 : 1) : 0);
             pos[GREEN_PORTAL] = ((r % 2) ? 0 : (r > 1 ? 2 : 1));
             pos[BLUE_PORTAL] = (r > 1 ? 1 : 2); // Blue Portal not on the left side (0)
 
-            for (int i=0; i<3; ++i)
+            for (int i = 0; i < 3; ++i)
                 if (Creature* portal = me->SummonCreature(PortalID[i], PortalCoord[pos[i]][0], PortalCoord[pos[i]][1], PortalCoord[pos[i]][2], 0, TEMPSUMMON_TIMED_DESPAWN, 60000))
                 {
-                    PortalGUID[i].Set(portal->GetGUID());
+                    PortalGUID[i] = portal->GetGUID();
                     portal->AddAura(PortalVisual[i], portal);
                 }
         }
@@ -144,7 +153,7 @@ public:
 
         void UpdatePortals() // Here we handle the beams' behavior
         {
-            for (int j=0; j<3; ++j) // j = color
+            for (int j = 0; j < 3; ++j) // j = color
                 if (Creature* portal = ObjectAccessor::GetCreature(*me, PortalGUID[j]))
                 {
                     // the one who's been cast upon before
@@ -152,23 +161,21 @@ public:
                     // temporary store for the best suitable beam reciever
                     Unit* target = me;
 
-                    if (Map* map = me->GetMap())
-                    {
-                        Map::PlayerList const& players = map->GetPlayers();
+                    Map::PlayerList const& players = me->GetMap()->GetPlayers();
 
-                        // get the best suitable target
-                        for (Map::PlayerList::const_iterator i = players.begin(); i != players.end(); ++i)
-                        {
-                            Player* p = i->GetSource();
-                            if (p && p->IsAlive() // alive
-                                && (!target || target->GetDistance2d(portal)>p->GetDistance2d(portal)) // closer than current best
-                                && !p->HasAura(PlayerDebuff[j]) // not exhausted
-                                && !p->HasAura(PlayerBuff[(j+1)%3]) // not on another beam
-                                && !p->HasAura(PlayerBuff[(j+2)%3])
-                                && IsBetween(me, p, portal)) // on the beam
-                                target = p;
-                        }
+                    // get the best suitable target
+                    for (Map::PlayerList::const_iterator i = players.begin(); i != players.end(); ++i)
+                    {
+                        Player* p = i->GetSource();
+                        if (p && p->IsAlive() // alive
+                            && (!target || target->GetDistance2d(portal)>p->GetDistance2d(portal)) // closer than current best
+                            && !p->HasAura(PlayerDebuff[j]) // not exhausted
+                            && !p->HasAura(PlayerBuff[(j + 1) % 3]) // not on another beam
+                            && !p->HasAura(PlayerBuff[(j + 2) % 3])
+                            && IsBetween(me, p, portal)) // on the beam
+                            target = p;
                     }
+
                     // buff the target
                     if (target->GetTypeId() == TYPEID_PLAYER)
                         target->AddAura(PlayerBuff[j], target);
@@ -195,7 +202,7 @@ public:
                     }
                     // aggro target if Red Beam
                     if (j == RED_PORTAL && me->GetVictim() != target && target->GetTypeId() == TYPEID_PLAYER)
-                        me->GetThreatManager().AddThreat(target, 100000.0f+GetThreat(me->GetVictim()));
+                        AddThreat(target, 100000.0f);
                 }
         }
 
@@ -228,23 +235,23 @@ public:
 
         void HandleDoors(bool open) // Massive Door switcher
         {
-            if (GameObject* Door = ObjectAccessor::GetGameObject(*me, instance->GetObjectGuid(DATA_GO_MASSIVE_DOOR) ))
+            if (GameObject* Door = ObjectAccessor::GetGameObject(*me, instance->GetGuidData(DATA_GO_MASSIVE_DOOR) ))
                 Door->SetGoState(open ? GO_STATE_ACTIVE : GO_STATE_READY);
         }
 
-        void EnterCombat(Unit* /*who*/)
+        void JustEngagedWith(Unit* /*who*/) override
         {
             HandleDoors(false);
             SwitchToPortalPhase();
         }
 
-        void JustDied(Unit* /*killer*/)
+        void JustDied(Unit* /*killer*/) override
         {
             HandleDoors(true);
             DestroyPortals();
         }
 
-        void UpdateAI(uint32 diff)
+        void UpdateAI(uint32 diff) override
         {
             if (!UpdateVictim())
                 return;

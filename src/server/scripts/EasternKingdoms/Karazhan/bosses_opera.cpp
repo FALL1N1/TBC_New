@@ -1,9 +1,14 @@
 #include "ScriptMgr.h"
+#include "InstanceScript.h"
+#include "karazhan.h"
+#include "Log.h"
+#include "MotionMaster.h"
+#include "ObjectAccessor.h"
+#include "Player.h"
 #include "ScriptedCreature.h"
 #include "ScriptedGossip.h"
-#include "karazhan.h"
-#include "Player.h"
 #include "SpellInfo.h"
+#include "TemporarySummon.h"
 
 /***********************************/
 /*** OPERA WIZARD OF OZ EVENT *****/
@@ -78,20 +83,20 @@ void SummonCroneIfReady(InstanceScript* instance, Creature* creature)
 
     if (instance->GetData(DATA_OPERA_OZ_DEATHCOUNT) == 4)
     {
-        if (Creature* pCrone = creature->SummonCreature(CREATURE_CRONE, -10891.96f, -1755.95f, creature->GetPositionZ(), 4.64f, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, HOUR*2*IN_MILLISECONDS))
+        if (Creature* pCrone = creature->SummonCreature(CREATURE_CRONE, -10891.96f, -1755.95f, creature->GetPositionZ(), 4.64f, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, (2*3600) * SECOND * IN_MILLISECONDS))
         {
             if (creature->GetVictim())
                 pCrone->AI()->AttackStart(creature->GetVictim());
         }
     }
-};
+}
 
 class boss_dorothee : public CreatureScript
 {
 public:
     boss_dorothee() : CreatureScript("boss_dorothee") { }
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetKarazhanAI<boss_dorotheeAI>(creature);
     }
@@ -100,7 +105,20 @@ public:
     {
         boss_dorotheeAI(Creature* creature) : ScriptedAI(creature)
         {
+            Initialize();
             instance = creature->GetInstanceScript();
+        }
+
+        void Initialize()
+        {
+            AggroTimer = 500;
+
+            WaterBoltTimer = 5000;
+            FearTimer = 15000;
+            SummonTitoTimer = 47500;
+
+            SummonedTito = false;
+            TitoDied = false;
         }
 
         InstanceScript* instance;
@@ -114,38 +132,31 @@ public:
         bool SummonedTito;
         bool TitoDied;
 
-        void Reset()
+        void Reset() override
         {
-            AggroTimer = 500;
-
-            WaterBoltTimer = 5000;
-            FearTimer = 15000;
-            SummonTitoTimer = 47500;
-
-            SummonedTito = false;
-            TitoDied = false;
+            Initialize();
         }
 
-        void EnterCombat(Unit* /*who*/)
+        void JustEngagedWith(Unit* /*who*/) override
         {
             Talk(SAY_DOROTHEE_AGGRO);
         }
 
-        void JustReachedHome()
+        void JustReachedHome() override
         {
             me->DespawnOrUnsummon();
         }
 
         void SummonTito();
 
-        void JustDied(Unit* /*killer*/)
+        void JustDied(Unit* /*killer*/) override
         {
             Talk(SAY_DOROTHEE_DEATH);
 
             SummonCroneIfReady(instance, me);
         }
 
-        void AttackStart(Unit* who)
+        void AttackStart(Unit* who) override
         {
             if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
                 return;
@@ -153,7 +164,7 @@ public:
             ScriptedAI::AttackStart(who);
         }
 
-        void MoveInLineOfSight(Unit* who)
+        void MoveInLineOfSight(Unit* who) override
 
         {
             if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
@@ -162,7 +173,7 @@ public:
             ScriptedAI::MoveInLineOfSight(who);
         }
 
-        void UpdateAI(uint32 diff)
+        void UpdateAI(uint32 diff) override
         {
             if (AggroTimer)
             {
@@ -205,40 +216,48 @@ class npc_tito : public CreatureScript
 public:
     npc_tito() : CreatureScript("npc_tito") { }
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
-        return new npc_titoAI(creature);
+        return GetKarazhanAI<npc_titoAI>(creature);
     }
 
     struct npc_titoAI : public ScriptedAI
     {
-        npc_titoAI(Creature* creature) : ScriptedAI(creature) { }
+        npc_titoAI(Creature* creature) : ScriptedAI(creature)
+        {
+            Initialize();
+        }
 
-        ObjectGuid DorotheeGUID;
-        uint32 YipTimer;
-
-        void Reset()
+        void Initialize()
         {
             DorotheeGUID.Clear();
             YipTimer = 10000;
         }
 
-        void EnterCombat(Unit* /*who*/) { }
+        ObjectGuid DorotheeGUID;
+        uint32 YipTimer;
 
-        void JustDied(Unit* /*killer*/)
+        void Reset() override
+        {
+            Initialize();
+        }
+
+        void JustEngagedWith(Unit* /*who*/) override { }
+
+        void JustDied(Unit* /*killer*/) override
         {
             if (DorotheeGUID)
             {
                 Creature* Dorothee = (ObjectAccessor::GetCreature((*me), DorotheeGUID));
                 if (Dorothee && Dorothee->IsAlive())
                 {
-                    CAST_AI(boss_dorothee::boss_dorotheeAI, Dorothee->AI())->TitoDied = true;
+                    ENSURE_AI(boss_dorothee::boss_dorotheeAI, Dorothee->AI())->TitoDied = true;
                     Talk(SAY_DOROTHEE_TITO_DEATH, Dorothee);
                 }
             }
         }
 
-        void UpdateAI(uint32 diff)
+        void UpdateAI(uint32 diff) override
         {
             if (!UpdateVictim())
                 return;
@@ -256,10 +275,10 @@ public:
 
 void boss_dorothee::boss_dorotheeAI::SummonTito()
 {
-    if (Creature* pTito = me->SummonCreature(CREATURE_TITO, 0.0f, 0.0f, 0.0f, 0.0f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 30000))
+    if (Creature* pTito = me->SummonCreature(CREATURE_TITO, 0.0f, 0.0f, 0.0f, 0.0f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 30 * SECOND * IN_MILLISECONDS))
     {
         Talk(SAY_DOROTHEE_SUMMON);
-        CAST_AI(npc_tito::npc_titoAI, pTito->AI())->DorotheeGUID.Set(me->GetGUID());
+        ENSURE_AI(npc_tito::npc_titoAI, pTito->AI())->DorotheeGUID = me->GetGUID();
         pTito->AI()->AttackStart(me->GetVictim());
         SummonedTito = true;
         TitoDied = false;
@@ -271,7 +290,7 @@ class boss_strawman : public CreatureScript
 public:
     boss_strawman() : CreatureScript("boss_strawman") { }
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetKarazhanAI<boss_strawmanAI>(creature);
     }
@@ -280,7 +299,15 @@ public:
     {
         boss_strawmanAI(Creature* creature) : ScriptedAI(creature)
         {
+            Initialize();
             instance = creature->GetInstanceScript();
+        }
+
+        void Initialize()
+        {
+            AggroTimer = 13000;
+            BrainBashTimer = 5000;
+            BrainWipeTimer = 7000;
         }
 
         InstanceScript* instance;
@@ -289,14 +316,12 @@ public:
         uint32 BrainBashTimer;
         uint32 BrainWipeTimer;
 
-        void Reset()
+        void Reset() override
         {
-            AggroTimer = 13000;
-            BrainBashTimer = 5000;
-            BrainWipeTimer = 7000;
+            Initialize();
         }
 
-        void AttackStart(Unit* who)
+        void AttackStart(Unit* who) override
         {
             if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
                 return;
@@ -304,7 +329,7 @@ public:
             ScriptedAI::AttackStart(who);
         }
 
-        void MoveInLineOfSight(Unit* who)
+        void MoveInLineOfSight(Unit* who) override
 
         {
             if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
@@ -313,19 +338,19 @@ public:
             ScriptedAI::MoveInLineOfSight(who);
         }
 
-        void EnterCombat(Unit* /*who*/)
+        void JustEngagedWith(Unit* /*who*/) override
         {
             Talk(SAY_STRAWMAN_AGGRO);
         }
 
-        void JustReachedHome()
+        void JustReachedHome() override
         {
             me->DespawnOrUnsummon();
         }
 
-        void SpellHit(Unit* /*caster*/, const SpellInfo* Spell)
+        void SpellHit(Unit* /*caster*/, SpellInfo const* spellInfo) override
         {
-            if ((Spell->SchoolMask == SPELL_SCHOOL_MASK_FIRE) && (!(rand()%10)))
+            if ((spellInfo->SchoolMask == SPELL_SCHOOL_MASK_FIRE) && (!(rand32() % 10)))
             {
                 /*
                     if (not direct damage(aoe, dot))
@@ -336,19 +361,19 @@ public:
             }
         }
 
-        void JustDied(Unit* /*killer*/)
+        void JustDied(Unit* /*killer*/) override
         {
             Talk(SAY_STRAWMAN_DEATH);
 
             SummonCroneIfReady(instance, me);
         }
 
-        void KilledUnit(Unit* /*victim*/)
+        void KilledUnit(Unit* /*victim*/) override
         {
             Talk(SAY_STRAWMAN_SLAY);
         }
 
-        void UpdateAI(uint32 diff)
+        void UpdateAI(uint32 diff) override
         {
             if (AggroTimer)
             {
@@ -385,7 +410,7 @@ class boss_tinhead : public CreatureScript
 public:
     boss_tinhead() : CreatureScript("boss_tinhead") { }
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetKarazhanAI<boss_tinheadAI>(creature);
     }
@@ -394,7 +419,17 @@ public:
     {
         boss_tinheadAI(Creature* creature) : ScriptedAI(creature)
         {
+            Initialize();
             instance = creature->GetInstanceScript();
+        }
+
+        void Initialize()
+        {
+            AggroTimer = 15000;
+            CleaveTimer = 5000;
+            RustTimer = 30000;
+
+            RustCount = 0;
         }
 
         InstanceScript* instance;
@@ -405,26 +440,22 @@ public:
 
         uint8 RustCount;
 
-        void Reset()
+        void Reset() override
         {
-            AggroTimer = 15000;
-            CleaveTimer = 5000;
-            RustTimer   = 30000;
-
-            RustCount   = 0;
+            Initialize();
         }
 
-        void EnterCombat(Unit* /*who*/)
+        void JustEngagedWith(Unit* /*who*/) override
         {
             Talk(SAY_TINHEAD_AGGRO);
         }
 
-        void JustReachedHome()
+        void JustReachedHome() override
         {
             me->DespawnOrUnsummon();
         }
 
-        void AttackStart(Unit* who)
+        void AttackStart(Unit* who) override
         {
             if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
                 return;
@@ -432,7 +463,7 @@ public:
             ScriptedAI::AttackStart(who);
         }
 
-        void MoveInLineOfSight(Unit* who)
+        void MoveInLineOfSight(Unit* who) override
 
         {
             if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
@@ -441,19 +472,19 @@ public:
             ScriptedAI::MoveInLineOfSight(who);
         }
 
-        void JustDied(Unit* /*killer*/)
+        void JustDied(Unit* /*killer*/) override
         {
             Talk(SAY_TINHEAD_DEATH);
 
             SummonCroneIfReady(instance, me);
         }
 
-        void KilledUnit(Unit* /*victim*/)
+        void KilledUnit(Unit* /*victim*/) override
         {
             Talk(SAY_TINHEAD_SLAY);
         }
 
-        void UpdateAI(uint32 diff)
+        void UpdateAI(uint32 diff) override
         {
             if (AggroTimer)
             {
@@ -494,7 +525,7 @@ class boss_roar : public CreatureScript
 public:
     boss_roar() : CreatureScript("boss_roar") { }
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetKarazhanAI<boss_roarAI>(creature);
     }
@@ -503,7 +534,16 @@ public:
     {
         boss_roarAI(Creature* creature) : ScriptedAI(creature)
         {
+            Initialize();
             instance = creature->GetInstanceScript();
+        }
+
+        void Initialize()
+        {
+            AggroTimer = 20000;
+            MangleTimer = 5000;
+            ShredTimer = 10000;
+            ScreamTimer = 15000;
         }
 
         InstanceScript* instance;
@@ -513,15 +553,12 @@ public:
         uint32 ShredTimer;
         uint32 ScreamTimer;
 
-        void Reset()
+        void Reset() override
         {
-            AggroTimer = 20000;
-            MangleTimer = 5000;
-            ShredTimer  = 10000;
-            ScreamTimer = 15000;
+            Initialize();
         }
 
-        void MoveInLineOfSight(Unit* who)
+        void MoveInLineOfSight(Unit* who) override
 
         {
             if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
@@ -530,7 +567,7 @@ public:
             ScriptedAI::MoveInLineOfSight(who);
         }
 
-        void AttackStart(Unit* who)
+        void AttackStart(Unit* who) override
         {
             if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
                 return;
@@ -538,29 +575,29 @@ public:
             ScriptedAI::AttackStart(who);
         }
 
-        void EnterCombat(Unit* /*who*/)
+        void JustEngagedWith(Unit* /*who*/) override
         {
             Talk(SAY_ROAR_AGGRO);
         }
 
-        void JustReachedHome()
+        void JustReachedHome() override
         {
             me->DespawnOrUnsummon();
         }
 
-        void JustDied(Unit* /*killer*/)
+        void JustDied(Unit* /*killer*/) override
         {
             Talk(SAY_ROAR_DEATH);
 
             SummonCroneIfReady(instance, me);
         }
 
-        void KilledUnit(Unit* /*victim*/)
+        void KilledUnit(Unit* /*victim*/) override
         {
             Talk(SAY_ROAR_SLAY);
         }
 
-        void UpdateAI(uint32 diff)
+        void UpdateAI(uint32 diff) override
         {
             if (AggroTimer)
             {
@@ -602,7 +639,7 @@ class boss_crone : public CreatureScript
 public:
     boss_crone() : CreatureScript("boss_crone") { }
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetKarazhanAI<boss_croneAI>(creature);
     }
@@ -611,7 +648,21 @@ public:
     {
         boss_croneAI(Creature* creature) : ScriptedAI(creature)
         {
+            Initialize();
             instance = creature->GetInstanceScript();
+        }
+
+        void Initialize()
+        {
+            // Hello, developer from the future! It's me again!
+            // This time, you're fixing Karazhan scripts. Awesome. These are a mess of hacks. An amalgamation of hacks, so to speak. Maybe even a Patchwerk thereof.
+            // Anyway, I digress.
+            // @todo This line below is obviously a hack. Duh. I'm just coming in here to hackfix the encounter to actually be completable.
+            // It needs a rewrite. Badly. Please, take good care of it.
+            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+            me->SetImmuneToPC(false);
+            CycloneTimer = 30000;
+            ChainLightningTimer = 10000;
         }
 
         InstanceScript* instance;
@@ -619,52 +670,40 @@ public:
         uint32 CycloneTimer;
         uint32 ChainLightningTimer;
 
-        void Reset()
+        void Reset() override
         {
-            CycloneTimer = 30000;
-            ChainLightningTimer = 10000;
+            Initialize();
         }
 
-        void JustReachedHome()
+        void JustReachedHome() override
         {
             me->DespawnOrUnsummon();
         }
 
-        void KilledUnit(Unit* /*victim*/)
+        void KilledUnit(Unit* /*victim*/) override
         {
            Talk(SAY_CRONE_SLAY);
         }
 
-        void EnterCombat(Unit* /*who*/)
+        void JustEngagedWith(Unit* /*who*/) override
         {
             Talk(SAY_CRONE_AGGRO);
-            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC);
         }
 
-        void JustDied(Unit* /*killer*/)
+        void JustDied(Unit* /*killer*/) override
         {
             Talk(SAY_CRONE_DEATH);
-
-            instance->SetData(TYPE_OPERA, DONE);
-            instance->HandleGameObject(instance->GetGuidData(DATA_GO_STAGEDOORLEFT), true);
-            instance->HandleGameObject(instance->GetGuidData(DATA_GO_STAGEDOORRIGHT), true);
-
-            if (GameObject* pSideEntrance = instance->instance->GetGameObject(instance->GetGuidData(DATA_GO_SIDE_ENTRANCE_DOOR)))
-                pSideEntrance->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
+            instance->SetBossState(DATA_OPERA_PERFORMANCE, DONE);
         }
 
-        void UpdateAI(uint32 diff)
+        void UpdateAI(uint32 diff) override
         {
             if (!UpdateVictim())
                 return;
 
-            if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
-                me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-
             if (CycloneTimer <= diff)
             {
-                if (Creature* Cyclone = DoSpawnCreature(CREATURE_CYCLONE, float(urand(0, 9)), float(urand(0, 9)), 0, 0, TEMPSUMMON_TIMED_DESPAWN, 15000))
+                if (Creature* Cyclone = DoSpawnCreature(CREATURE_CYCLONE, float(urand(0, 9)), float(urand(0, 9)), 0, 0, TEMPSUMMON_TIMED_DESPAWN, 15 * SECOND * IN_MILLISECONDS))
                     Cyclone->CastSpell(Cyclone, SPELL_CYCLONE_VISUAL, true);
                 CycloneTimer = 30000;
             } else CycloneTimer -= diff;
@@ -685,30 +724,38 @@ class npc_cyclone : public CreatureScript
 public:
     npc_cyclone() : CreatureScript("npc_cyclone") { }
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
-        return new npc_cycloneAI(creature);
+        return GetKarazhanAI<npc_cycloneAI>(creature);
     }
 
     struct npc_cycloneAI : public ScriptedAI
     {
-        npc_cycloneAI(Creature* creature) : ScriptedAI(creature) { }
+        npc_cycloneAI(Creature* creature) : ScriptedAI(creature)
+        {
+            Initialize();
+        }
 
-        uint32 MoveTimer;
-
-        void Reset()
+        void Initialize()
         {
             MoveTimer = 1000;
         }
 
-        void EnterCombat(Unit* /*who*/) { }
+        uint32 MoveTimer;
 
-        void MoveInLineOfSight(Unit* /*who*/)
+        void Reset() override
+        {
+            Initialize();
+        }
+
+        void JustEngagedWith(Unit* /*who*/) override { }
+
+        void MoveInLineOfSight(Unit* /*who*/) override
 
         {
         }
 
-        void UpdateAI(uint32 diff)
+        void UpdateAI(uint32 diff) override
         {
             if (!me->HasAura(SPELL_KNOCKBACK))
                 DoCast(me, SPELL_KNOCKBACK, true);
@@ -731,46 +778,44 @@ enum RedRidingHood
     SAY_WOLF_AGGRO                  = 0,
     SAY_WOLF_SLAY                   = 1,
     SAY_WOLF_HOOD                   = 2,
+    OPTION_WHAT_PHAT_LEWTS_YOU_HAVE = 7443,
     SOUND_WOLF_DEATH                = 9275,
 
     SPELL_LITTLE_RED_RIDING_HOOD    = 30768,
     SPELL_TERRIFYING_HOWL           = 30752,
     SPELL_WIDE_SWIPE                = 30761,
 
-    CREATURE_BIG_BAD_WOLF           = 17521,
+    CREATURE_BIG_BAD_WOLF           = 17521
 };
-
-
-#define GOSSIP_GRANDMA          "What phat lewtz you have grandmother?"
-
-
 
 class npc_grandmother : public CreatureScript
 {
-public:
-    npc_grandmother() : CreatureScript("npc_grandmother") { }
+    public:
+        npc_grandmother() : CreatureScript("npc_grandmother") { }
 
-    bool OnGossipSelect(Player* player, Creature* creature, uint32 /*sender*/, uint32 action)
-    {
-        player->PlayerTalkClass->ClearMenus();
-        if (action == GOSSIP_ACTION_INFO_DEF)
+        struct npc_grandmotherAI : public ScriptedAI
         {
-            if (Creature* pBigBadWolf = creature->SummonCreature(CREATURE_BIG_BAD_WOLF, 0.0f, 0.0f, 0.0f, 0.0f, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, HOUR*2*IN_MILLISECONDS))
-                pBigBadWolf->AI()->AttackStart(player);
+            npc_grandmotherAI(Creature* creature) : ScriptedAI(creature) { }
 
-            creature->DespawnOrUnsummon();
+            bool GossipSelect(Player* player, uint32 menuId, uint32 gossipListId) override
+            {
+                if (menuId == OPTION_WHAT_PHAT_LEWTS_YOU_HAVE && gossipListId == 0)
+                {
+                    CloseGossipMenuFor(player);
+
+                    if (Creature* pBigBadWolf = me->SummonCreature(CREATURE_BIG_BAD_WOLF, me->GetPositionX(), me->GetPositionY(), me->GetPositionZ(), me->GetOrientation(), TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, (2*3600) * SECOND * IN_MILLISECONDS))
+                        pBigBadWolf->AI()->AttackStart(player);
+
+                    me->DespawnOrUnsummon();
+                }
+                return false;
+            }
+        };
+
+        CreatureAI* GetAI(Creature* creature) const override
+        {
+            return GetKarazhanAI<npc_grandmotherAI>(creature);
         }
-
-        return true;
-    }
-
-    bool OnGossipHello(Player* player, Creature* creature)
-    {
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, GOSSIP_GRANDMA, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
-        SendGossipMenuFor(player, 8990, creature->GetGUID());
-
-        return true;
-    }
 };
 
 class boss_bigbadwolf : public CreatureScript
@@ -778,7 +823,7 @@ class boss_bigbadwolf : public CreatureScript
 public:
     boss_bigbadwolf() : CreatureScript("boss_bigbadwolf") { }
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetKarazhanAI<boss_bigbadwolfAI>(creature);
     }
@@ -787,7 +832,20 @@ public:
     {
         boss_bigbadwolfAI(Creature* creature) : ScriptedAI(creature)
         {
+            Initialize();
             instance = creature->GetInstanceScript();
+        }
+
+        void Initialize()
+        {
+            ChaseTimer = 30000;
+            FearTimer = urand(25000, 35000);
+            SwipeTimer = 5000;
+
+            HoodGUID.Clear();
+            TempThreat = 0;
+
+            IsChasing = false;
         }
 
         InstanceScript* instance;
@@ -801,46 +859,33 @@ public:
 
         bool IsChasing;
 
-        void Reset()
+        void Reset() override
         {
-            ChaseTimer = 30000;
-            FearTimer = urand(25000, 35000);
-            SwipeTimer = 5000;
-
-            HoodGUID.Clear();
-            TempThreat = 0;
-
-            IsChasing = false;
+            Initialize();
         }
 
-        void EnterCombat(Unit* /*who*/)
+        void JustEngagedWith(Unit* /*who*/) override
         {
             Talk(SAY_WOLF_AGGRO);
         }
 
-        void KilledUnit(Unit* /*victim*/)
+        void KilledUnit(Unit* /*victim*/) override
         {
             Talk(SAY_WOLF_SLAY);
         }
 
-        void JustReachedHome()
+        void JustReachedHome() override
         {
             me->DespawnOrUnsummon();
         }
 
-        void JustDied(Unit* /*killer*/)
+        void JustDied(Unit* /*killer*/) override
         {
             DoPlaySoundToSet(me, SOUND_WOLF_DEATH);
-
-            instance->SetData(TYPE_OPERA, DONE);
-            instance->HandleGameObject(instance->GetGuidData(DATA_GO_STAGEDOORLEFT), true);
-            instance->HandleGameObject(instance->GetGuidData(DATA_GO_STAGEDOORRIGHT), true);
-
-            if (GameObject* pSideEntrance = instance->instance->GetGameObject(instance->GetGuidData(DATA_GO_SIDE_ENTRANCE_DOOR)))
-                pSideEntrance->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
+            instance->SetBossState(DATA_OPERA_PERFORMANCE, DONE);
         }
 
-        void UpdateAI(uint32 diff)
+        void UpdateAI(uint32 diff) override
         {
             if (!UpdateVictim())
                 return;
@@ -857,9 +902,9 @@ public:
                         DoCast(target, SPELL_LITTLE_RED_RIDING_HOOD, true);
                         TempThreat = GetThreat(target);
                         if (TempThreat)
-                           ModifyThreatByPercent(target, -100);
-                        HoodGUID.Set(target->GetGUID());
-                        me->GetThreatManager().AddThreat(target, 1000000.0f);
+                            ModifyThreatByPercent(target, -100);
+                        HoodGUID = target->GetGUID();
+                        AddThreat(target, 1000000.0f);
                         ChaseTimer = 20000;
                         IsChasing = true;
                     }
@@ -873,7 +918,7 @@ public:
                         HoodGUID.Clear();
                         if (GetThreat(target))
                             ModifyThreatByPercent(target, -100);
-                        me->GetThreatManager().AddThreat(target, TempThreat);
+                        AddThreat(target, TempThreat);
                         TempThreat = 0;
                     }
 
@@ -952,7 +997,7 @@ void PretendToDie(Creature* creature)
     creature->RemoveAllAuras();
     creature->SetHealth(0);
     creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-    //creature->GetMotionMaster()->MovementExpired(false);
+    creature->GetMotionMaster()->Clear();
     creature->GetMotionMaster()->MoveIdle();
     creature->SetStandState(UNIT_STAND_STATE_DEAD);
 }
@@ -977,7 +1022,7 @@ class boss_julianne : public CreatureScript
 public:
     boss_julianne() : CreatureScript("boss_julianne") { }
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetKarazhanAI<boss_julianneAI>(creature);
     }
@@ -986,10 +1031,29 @@ public:
     {
         boss_julianneAI(Creature* creature) : ScriptedAI(creature)
         {
+            Initialize();
             instance = creature->GetInstanceScript();
             EntryYellTimer = 1000;
             AggroYellTimer = 10000;
             IsFakingDeath = false;
+            ResurrectTimer = 0;
+        }
+
+        void Initialize()
+        {
+            RomuloGUID.Clear();
+            Phase = PHASE_JULIANNE;
+
+            BlindingPassionTimer = 30000;
+            DevotionTimer = 15000;
+            EternalAffectionTimer = 25000;
+            PowerfulAttractionTimer = 5000;
+            SummonRomuloTimer = 10000;
+            DrinkPoisonTimer = 0;
+            ResurrectSelfTimer = 0;
+
+            SummonedRomulo = false;
+            RomuloDead = false;
         }
 
         InstanceScript* instance;
@@ -1014,32 +1078,19 @@ public:
         bool SummonedRomulo;
         bool RomuloDead;
 
-        void Reset()
+        void Reset() override
         {
-            RomuloGUID.Clear();
-            Phase = PHASE_JULIANNE;
-
-            BlindingPassionTimer = 30000;
-            DevotionTimer = 15000;
-            EternalAffectionTimer = 25000;
-            PowerfulAttractionTimer = 5000;
-            SummonRomuloTimer = 10000;
-            DrinkPoisonTimer = 0;
-            ResurrectSelfTimer = 0;
-
+            Initialize();
             if (IsFakingDeath)
             {
                 Resurrect(me);
                 IsFakingDeath = false;
             }
-
-            SummonedRomulo = false;
-            RomuloDead = false;
         }
 
-        void EnterCombat(Unit* /*who*/) { }
+        void JustEngagedWith(Unit* /*who*/) override { }
 
-        void AttackStart(Unit* who)
+        void AttackStart(Unit* who) override
         {
             if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
                 return;
@@ -1047,7 +1098,7 @@ public:
             ScriptedAI::AttackStart(who);
         }
 
-        void MoveInLineOfSight(Unit* who)
+        void MoveInLineOfSight(Unit* who) override
 
         {
             if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
@@ -1056,39 +1107,34 @@ public:
             ScriptedAI::MoveInLineOfSight(who);
         }
 
-        void JustReachedHome()
+        void JustReachedHome() override
         {
             me->DespawnOrUnsummon();
         }
 
-        void SpellHit(Unit* /*caster*/, const SpellInfo* Spell)
+        void SpellHit(Unit* /*caster*/, SpellInfo const* spellInfo) override
         {
-            if (Spell->Id == SPELL_DRINK_POISON)
+            if (spellInfo->Id == SPELL_DRINK_POISON)
             {
                 Talk(SAY_JULIANNE_DEATH01);
                 DrinkPoisonTimer = 2500;
             }
         }
 
-        void DamageTaken(Unit*, uint32& damage) override;
+        void DamageTaken(Unit* /*done_by*/, uint32 &damage) override;
 
-        void JustDied(Unit*)
+        void JustDied(Unit* /*killer*/) override
         {
             Talk(SAY_JULIANNE_DEATH02);
-
-            instance->SetData(TYPE_OPERA, DONE);
-            instance->HandleGameObject(instance->GetGuidData(DATA_GO_STAGEDOORLEFT), true);
-            instance->HandleGameObject(instance->GetGuidData(DATA_GO_STAGEDOORRIGHT), true);
-            if (GameObject* pSideEntrance = instance->instance->GetGameObject(instance->GetGuidData(DATA_GO_SIDE_ENTRANCE_DOOR)))
-                pSideEntrance->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
+            instance->SetBossState(DATA_OPERA_PERFORMANCE, DONE);
         }
 
-        void KilledUnit(Unit* /*victim*/)
+        void KilledUnit(Unit* /*victim*/) override
         {
            Talk(SAY_JULIANNE_SLAY);
         }
 
-        void UpdateAI(uint32 diff);
+        void UpdateAI(uint32 diff) override;
     };
 };
 
@@ -1097,7 +1143,7 @@ class boss_romulo : public CreatureScript
 public:
     boss_romulo() : CreatureScript("boss_romulo") { }
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetKarazhanAI<boss_romuloAI>(creature);
     }
@@ -1106,9 +1152,25 @@ public:
     {
         boss_romuloAI(Creature* creature) : ScriptedAI(creature)
         {
+            Initialize();
             instance = creature->GetInstanceScript();
             EntryYellTimer = 8000;
             AggroYellTimer = 15000;
+        }
+
+        void Initialize()
+        {
+            JulianneGUID.Clear();
+            Phase = PHASE_ROMULO;
+
+            BackwardLungeTimer = 15000;
+            DaringTimer = 20000;
+            DeadlySwatheTimer = 25000;
+            PoisonThrustTimer = 10000;
+            ResurrectTimer = 10000;
+
+            IsFakingDeath = false;
+            JulianneDead = false;
         }
 
         InstanceScript* instance;
@@ -1127,27 +1189,17 @@ public:
         bool IsFakingDeath;
         bool JulianneDead;
 
-        void Reset()
+        void Reset() override
         {
-            JulianneGUID.Clear();
-            Phase = PHASE_ROMULO;
-
-            BackwardLungeTimer = 15000;
-            DaringTimer = 20000;
-            DeadlySwatheTimer = 25000;
-            PoisonThrustTimer = 10000;
-            ResurrectTimer = 10000;
-
-            IsFakingDeath = false;
-            JulianneDead = false;
+            Initialize();
         }
 
-        void JustReachedHome()
+        void JustReachedHome() override
         {
             me->DespawnOrUnsummon();
         }
 
-        void DamageTaken(Unit*, uint32 &damage) override
+        void DamageTaken(Unit* /*done_by*/, uint32 &damage) override
         {
             if (damage < me->GetHealth())
                 return;
@@ -1163,8 +1215,8 @@ public:
 
                 if (Creature* Julianne = (ObjectAccessor::GetCreature((*me), JulianneGUID)))
                 {
-                    CAST_AI(boss_julianne::boss_julianneAI, Julianne->AI())->RomuloDead = true;
-                    CAST_AI(boss_julianne::boss_julianneAI, Julianne->AI())->ResurrectSelfTimer = 10000;
+                    ENSURE_AI(boss_julianne::boss_julianneAI, Julianne->AI())->RomuloDead = true;
+                    ENSURE_AI(boss_julianne::boss_julianneAI, Julianne->AI())->ResurrectSelfTimer = 10000;
                 }
 
                 damage = 0;
@@ -1181,7 +1233,6 @@ public:
                         Julianne->GetMotionMaster()->Clear();
                         Julianne->SetDeathState(JUST_DIED);
                         Julianne->CombatStop(true);
-                        Julianne->GetThreatManager().ClearAllThreat();
                         Julianne->SetUInt32Value(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
                     }
                     return;
@@ -1191,17 +1242,17 @@ public:
                 {
                     PretendToDie(me);
                     IsFakingDeath = true;
-                    CAST_AI(boss_julianne::boss_julianneAI, Julianne->AI())->ResurrectTimer = 10000;
-                    CAST_AI(boss_julianne::boss_julianneAI, Julianne->AI())->RomuloDead = true;
+                    ENSURE_AI(boss_julianne::boss_julianneAI, Julianne->AI())->ResurrectTimer = 10000;
+                    ENSURE_AI(boss_julianne::boss_julianneAI, Julianne->AI())->RomuloDead = true;
                     damage = 0;
                     return;
                 }
             }
 
-            //TC_LOG_ERROR("scripts", "boss_romuloAI: DamageTaken reach end of code, that should not happen.");
+            TC_LOG_ERROR("scripts", "boss_romuloAI: DamageTaken reach end of code, that should not happen.");
         }
 
-        void EnterCombat(Unit* /*who*/)
+        void JustEngagedWith(Unit* /*who*/) override
         {
             Talk(SAY_ROMULO_AGGRO);
             if (JulianneGUID)
@@ -1209,13 +1260,13 @@ public:
                 Creature* Julianne = (ObjectAccessor::GetCreature((*me), JulianneGUID));
                 if (Julianne && Julianne->GetVictim())
                 {
-                    me->GetThreatManager().AddThreat(Julianne->GetVictim(), 1.0f);
+                    AddThreat(Julianne->GetVictim(), 1.0f);
                     AttackStart(Julianne->GetVictim());
                 }
             }
         }
 
-        void MoveInLineOfSight(Unit* who)
+        void MoveInLineOfSight(Unit* who) override
 
         {
             if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
@@ -1224,24 +1275,18 @@ public:
             ScriptedAI::MoveInLineOfSight(who);
         }
 
-        void JustDied(Unit* /*killer*/)
+        void JustDied(Unit* /*killer*/) override
         {
             Talk(SAY_ROMULO_DEATH);
-
-            instance->SetData(TYPE_OPERA, DONE);
-            instance->HandleGameObject(instance->GetGuidData(DATA_GO_STAGEDOORLEFT), true);
-            instance->HandleGameObject(instance->GetGuidData(DATA_GO_STAGEDOORRIGHT), true);
-
-            if (GameObject* pSideEntrance = instance->instance->GetGameObject(instance->GetGuidData(DATA_GO_SIDE_ENTRANCE_DOOR)))
-                pSideEntrance->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
+            instance->SetBossState(DATA_OPERA_PERFORMANCE, DONE);
         }
 
-        void KilledUnit(Unit* /*victim*/)
+        void KilledUnit(Unit* /*victim*/) override
         {
             Talk(SAY_ROMULO_SLAY);
         }
 
-        void UpdateAI(uint32 diff)
+        void UpdateAI(uint32 diff) override
         {
             if (!UpdateVictim() || IsFakingDeath)
                 return;
@@ -1251,11 +1296,11 @@ public:
                 if (ResurrectTimer <= diff)
                 {
                     Creature* Julianne = (ObjectAccessor::GetCreature((*me), JulianneGUID));
-                    if (Julianne && CAST_AI(boss_julianne::boss_julianneAI, Julianne->AI())->IsFakingDeath)
+                    if (Julianne && ENSURE_AI(boss_julianne::boss_julianneAI, Julianne->AI())->IsFakingDeath)
                     {
                         Talk(SAY_ROMULO_RESURRECT);
                         Resurrect(Julianne);
-                        CAST_AI(boss_julianne::boss_julianneAI, Julianne->AI())->IsFakingDeath = false;
+                        ENSURE_AI(boss_julianne::boss_julianneAI, Julianne->AI())->IsFakingDeath = false;
                         JulianneDead = false;
                         ResurrectTimer = 10000;
                     }
@@ -1265,7 +1310,7 @@ public:
             if (BackwardLungeTimer <= diff)
             {
                 Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 100, true);
-                if (target && !me->HasInArc(M_PI, target))
+                if (target && !me->HasInArc(float(M_PI), target))
                 {
                     DoCast(target, SPELL_BACKWARD_LUNGE);
                     BackwardLungeTimer = urand(15000, 30000);
@@ -1313,7 +1358,7 @@ void boss_julianne::boss_julianneAI::UpdateAI(uint32 diff)
         {
             Talk(SAY_JULIANNE_AGGRO);
             me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-            me->SetFaction(16);
+            me->SetFaction(FACTION_MONSTER_2);
             AggroYellTimer = 0;
         } else AggroYellTimer -= diff;
     }
@@ -1334,14 +1379,14 @@ void boss_julianne::boss_julianneAI::UpdateAI(uint32 diff)
     {
         if (SummonRomuloTimer <= diff)
         {
-            if (Creature* pRomulo = me->SummonCreature(CREATURE_ROMULO, ROMULO_X, ROMULO_Y, me->GetPositionZ(), 0, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, HOUR*2*IN_MILLISECONDS))
+            if (Creature* pRomulo = me->SummonCreature(CREATURE_ROMULO, ROMULO_X, ROMULO_Y, me->GetPositionZ(), 0, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, (2*3600) * SECOND * IN_MILLISECONDS))
             {
-                RomuloGUID.Set(pRomulo->GetGUID());
-                CAST_AI(boss_romulo::boss_romuloAI, pRomulo->AI())->JulianneGUID.Set(me->GetGUID());
-                CAST_AI(boss_romulo::boss_romuloAI, pRomulo->AI())->Phase = PHASE_ROMULO;
+                RomuloGUID = pRomulo->GetGUID();
+                ENSURE_AI(boss_romulo::boss_romuloAI, pRomulo->AI())->JulianneGUID = me->GetGUID();
+                ENSURE_AI(boss_romulo::boss_romuloAI, pRomulo->AI())->Phase = PHASE_ROMULO;
                 DoZoneInCombat(pRomulo);
 
-                pRomulo->SetFaction(16);
+                pRomulo->SetFaction(FACTION_MONSTER_2);
             }
             SummonedRomulo = true;
         } else SummonRomuloTimer -= diff;
@@ -1371,11 +1416,11 @@ void boss_julianne::boss_julianneAI::UpdateAI(uint32 diff)
         if (ResurrectTimer <= diff)
         {
             Creature* Romulo = (ObjectAccessor::GetCreature((*me), RomuloGUID));
-            if (Romulo && CAST_AI(boss_romulo::boss_romuloAI, Romulo->AI())->IsFakingDeath)
+            if (Romulo && ENSURE_AI(boss_romulo::boss_romuloAI, Romulo->AI())->IsFakingDeath)
             {
                 Talk(SAY_JULIANNE_RESURRECT);
                 Resurrect(Romulo);
-                CAST_AI(boss_romulo::boss_romuloAI, Romulo->AI())->IsFakingDeath = false;
+                ENSURE_AI(boss_romulo::boss_romuloAI, Romulo->AI())->IsFakingDeath = false;
                 RomuloDead = false;
                 ResurrectTimer = 10000;
             }
@@ -1441,7 +1486,7 @@ void boss_julianne::boss_julianneAI::DamageTaken(Unit* /*done_by*/, uint32 &dama
 
     if (Phase == PHASE_ROMULO)
     {
-        //TC_LOG_ERROR("scripts", "boss_julianneAI: cannot take damage in PHASE_ROMULO, why was i here?");
+        TC_LOG_ERROR("scripts", "boss_julianneAI: cannot take damage in PHASE_ROMULO, why was i here?");
         damage = 0;
         return;
     }
@@ -1457,7 +1502,6 @@ void boss_julianne::boss_julianneAI::DamageTaken(Unit* /*done_by*/, uint32 &dama
                 Romulo->GetMotionMaster()->Clear();
                 Romulo->SetDeathState(JUST_DIED);
                 Romulo->CombatStop(true);
-                Romulo->GetThreatManager().ClearAllThreat();
                 Romulo->SetUInt32Value(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
             }
 
@@ -1469,13 +1513,13 @@ void boss_julianne::boss_julianneAI::DamageTaken(Unit* /*done_by*/, uint32 &dama
         {
             PretendToDie(me);
             IsFakingDeath = true;
-            CAST_AI(boss_romulo::boss_romuloAI, Romulo->AI())->ResurrectTimer = 10000;
-            CAST_AI(boss_romulo::boss_romuloAI, Romulo->AI())->JulianneDead = true;
+            ENSURE_AI(boss_romulo::boss_romuloAI, Romulo->AI())->ResurrectTimer = 10000;
+            ENSURE_AI(boss_romulo::boss_romuloAI, Romulo->AI())->JulianneDead = true;
             damage = 0;
             return;
         }
     }
-    //TC_LOG_ERROR("scripts", "boss_julianneAI: DamageTaken reach end of code, that should not happen.");
+    TC_LOG_ERROR("scripts", "boss_julianneAI: DamageTaken reach end of code, that should not happen.");
 }
 
 void AddSC_bosses_opera()

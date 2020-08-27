@@ -1,239 +1,313 @@
 #include "ScriptMgr.h"
+#include "Creature.h"
+#include "GameObject.h"
 #include "InstanceScript.h"
 #include "karazhan.h"
+#include "Map.h"
+
+/*
+0  - Attumen + Midnight (optional)
+1  - Moroes
+2  - Maiden of Virtue (optional)
+3  - Hyakiss the Lurker /  Rokad the Ravager  / Shadikith the Glider
+4  - Opera Event
+5  - Curator
+6  - Shade of Aran (optional)
+7  - Terestian Illhoof (optional)
+8  - Netherspite (optional)
+9  - Chess Event
+10 - Prince Malchezzar
+11 - Nightbane
+*/
+
+const Position OptionalSpawn[] =
+{
+    { -10960.981445f, -1940.138428f, 46.178097f, 4.12f  }, // Hyakiss the Lurker
+    { -10945.769531f, -2040.153320f, 49.474438f, 0.077f }, // Shadikith the Glider
+    { -10899.903320f, -2085.573730f, 49.474449f, 1.38f  }  // Rokad the Ravager
+};
 
 class instance_karazhan : public InstanceMapScript
 {
-    public:
-        instance_karazhan() : InstanceMapScript("instance_karazhan", 532) { }
+public:
+    instance_karazhan() : InstanceMapScript(KZScriptName, 532) { }
 
-        InstanceScript* GetInstanceScript(InstanceMap* map) const
+    InstanceScript* GetInstanceScript(InstanceMap* map) const override
+    {
+        return new instance_karazhan_InstanceMapScript(map);
+    }
+
+    struct instance_karazhan_InstanceMapScript : public InstanceScript
+    {
+        instance_karazhan_InstanceMapScript(Map* map) : InstanceScript(map)
         {
-            return new instance_karazhan_InstanceMapScript(map);
+            SetHeaders(DataHeader);
+            SetBossNumber(EncounterCount);
+
+            // 1 - OZ, 2 - HOOD, 3 - RAJ, this never gets altered.
+            OperaEvent = urand(EVENT_OZ, EVENT_RAJ);
+            OzDeathCount = 0;
+            OptionalBossCount = 0;
         }
 
-        struct instance_karazhan_InstanceMapScript : public InstanceScript
+        void OnCreatureCreate(Creature* creature) override
         {
-            instance_karazhan_InstanceMapScript(Map* map) : InstanceScript(map) { }
-
-
-            void Initialize()
+            switch (creature->GetEntry())
             {
-                SetBossNumber(MAX_ENCOUNTERS);
-                _servantQuartersKills = 0;
-                _selectedRare = RAND(NPC_HYAKISS_THE_LURKER, NPC_SHADIKITH_THE_GLIDER, NPC_ROKAD_THE_RAVAGER);
+                case NPC_KILREK:
+                    KilrekGUID = creature->GetGUID();
+                    break;
+                case NPC_TERESTIAN_ILLHOOF:
+                    TerestianGUID = creature->GetGUID();
+                    break;
+                case NPC_MOROES:
+                    MoroesGUID = creature->GetGUID();
+                    break;
+                case NPC_NIGHTBANE:
+                    NightbaneGUID = creature->GetGUID();
+                    break;
+                default:
+                    break;
             }
+        }
 
-            void OnCreatureCreate(Creature* creature)
-            {
-                InstanceScript::OnCreatureCreate(creature);
-            }
+        void OnUnitDeath(Unit* unit) override
+        {
+            Creature* creature = unit->ToCreature();
+            if (!creature)
+                return;
 
-            void SetData(uint32 type, uint32 uiData)
+            switch (creature->GetEntry())
             {
-                switch (type)
-                {
-                    case DATA_COUNT_SERVANT_QUARTERS_KILLS:
-                        if (++_servantQuartersKills > 52) // 56 in total, not all have to be killed, almost all
+                case NPC_COLDMIST_WIDOW:
+                case NPC_COLDMIST_STALKER:
+                case NPC_SHADOWBAT:
+                case NPC_VAMPIRIC_SHADOWBAT:
+                case NPC_GREATER_SHADOWBAT:
+                case NPC_PHASE_HOUND:
+                case NPC_DREADBEAST:
+                case NPC_SHADOWBEAST:
+                    if (GetBossState(DATA_OPTIONAL_BOSS) == TO_BE_DECIDED)
+                    {
+                        ++OptionalBossCount;
+                        if (OptionalBossCount == OPTIONAL_BOSS_REQUIRED_DEATH_COUNT)
                         {
-                            SetBossState(TYPE_SERVANT_QUARTERS, NOT_STARTED);
-                            SetBossState(TYPE_SERVANT_QUARTERS, DONE);
+                            switch (urand(NPC_HYAKISS_THE_LURKER, NPC_ROKAD_THE_RAVAGER))
+                            {
+                                case NPC_HYAKISS_THE_LURKER:
+                                    instance->SummonCreature(NPC_HYAKISS_THE_LURKER, OptionalSpawn[0]);
+                                    break;
+                                case NPC_SHADIKITH_THE_GLIDER:
+                                    instance->SummonCreature(NPC_SHADIKITH_THE_GLIDER, OptionalSpawn[1]);
+                                    break;
+                                case NPC_ROKAD_THE_RAVAGER:
+                                    instance->SummonCreature(NPC_ROKAD_THE_RAVAGER, OptionalSpawn[2]);
+                                    break;
+                            }
                         }
-                        SaveToDB();
-                        break;
-
-                    /*
-                    case TYPE_ATTUMEN:              m_auiEncounter[0] = uiData; break;
-                    case TYPE_MOROES:
-                        if (m_auiEncounter[1] == DONE)
-                            break;
-                        m_auiEncounter[1] = uiData;
-                        break;
-                    case TYPE_MAIDEN:               m_auiEncounter[2] = uiData; break;
-                    case TYPE_OPTIONAL_BOSS:        m_auiEncounter[3] = uiData; break;
-                    case TYPE_OPERA:
-                        m_auiEncounter[4] = uiData;
-                        if (uiData == DONE)
-                            instance->UpdateEncounterState(ENCOUNTER_CREDIT_KILL_CREATURE, 16812, NULL);
-                        break;
-                    case TYPE_CURATOR:              m_auiEncounter[5] = uiData; break;
-                    case TYPE_ARAN:                 m_auiEncounter[6] = uiData; break;
-                    case TYPE_TERESTIAN:            m_auiEncounter[7] = uiData; break;
-                    case TYPE_NETHERSPITE:          m_auiEncounter[8] = uiData; break;
-                    case TYPE_CHESS:
-                        if (uiData == DONE)
-                            DoRespawnGameObject(DustCoveredChest, DAY);
-                        m_auiEncounter[9]  = uiData;
-                        break;
-                    case TYPE_MALCHEZZAR:           m_auiEncounter[10] = uiData; break;
-                    case TYPE_NIGHTBANE:
-                        if (m_auiEncounter[11] != DONE)
-                            m_auiEncounter[11] = uiData;
-                        break;
-                    case DATA_OPERA_OZ_DEATHCOUNT:
-                        if (uiData == SPECIAL)
-                            ++m_uiOzDeathCount;
-                        else if (uiData == IN_PROGRESS)
-                            m_uiOzDeathCount = 0;
-                        break;
-*/
-                }
+                    }
+                    break;
+                default:
+                    break;
             }
-
-             void SetData64(uint32 identifier, uint64 data)
-             {
-                // switch (identifier)
-                // {
-                 //case DATA_IMAGE_OF_MEDIVH: ImageGUID = data;
-                // }
-             }
-
-            void OnGameObjectCreate(GameObject* go)
-            {
-                InstanceScript::OnGameObjectCreate(go);
-                /*switch (go->GetEntry())
-                {
-                    case 183932:   m_uiCurtainGUID          = go->GetGUID();         break;
-                    case 184278:
-                        m_uiStageDoorLeftGUID = go->GetGUID();
-                        if (m_auiEncounter[4] == DONE)
-                            go->SetGoState(GO_STATE_ACTIVE);
-                        break;
-                    case 184279:
-                        m_uiStageDoorRightGUID = go->GetGUID();
-                        if (m_auiEncounter[4] == DONE)
-                            go->SetGoState(GO_STATE_ACTIVE);
-                        break;
-                    case 184517:   m_uiLibraryDoor          = go->GetGUID();         break;
-                    case 185521:   m_uiMassiveDoor          = go->GetGUID();         break;
-                    case 184276:   m_uiGamesmansDoor        = go->GetGUID();         break;
-                    case 184277:   m_uiGamesmansExitDoor    = go->GetGUID();         break;
-                    case 185134:   m_uiNetherspaceDoor      = go->GetGUID();         break;
-                    case 184274:    MastersTerraceDoor[0] = go->GetGUID();  break;
-                    case 184280:    MastersTerraceDoor[1] = go->GetGUID();  break;
-                    case 184275:
-                        m_uiSideEntranceDoor = go->GetGUID();
-                        if (m_auiEncounter[4] == DONE)
-                            go->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
-                        else
-                            go->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
-                        break;
-                    case 185119: DustCoveredChest = go->GetGUID(); break;
-                }*/
-            }
-
-            uint32 GetData(uint32 data) const
-            {
-                switch (data)
-                {
-                    case DATA_SELECTED_RARE:
-                        return _selectedRare;
-                }
-
-                return 0;
-            }
-
-        private:
-            uint32 _servantQuartersKills;
-            uint32 _selectedRare;
-        };
-};
-
-class spell_karazhan_brittle_bones : public SpellScriptLoader
-{
-    public:
-        spell_karazhan_brittle_bones() : SpellScriptLoader("spell_karazhan_brittle_bones") { }
-
-        class spell_karazhan_brittle_bones_AuraScript : public AuraScript
-        {
-            PrepareAuraScript(spell_karazhan_brittle_bones_AuraScript);
-
-            void CalcPeriodic(AuraEffect const* /*effect*/, bool& isPeriodic, int32& amplitude)
-            {
-                isPeriodic = true;
-                amplitude = 5000;
-            }
-
-            void Update(AuraEffect const* effect)
-            {                
-                PreventDefaultAction();
-                if (roll_chance_i(35))
-                    GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_RATTLED, true);
-            }
-
-            void Register()
-            {
-                DoEffectCalcPeriodic += AuraEffectCalcPeriodicFn(spell_karazhan_brittle_bones_AuraScript::CalcPeriodic, EFFECT_0, SPELL_AURA_DUMMY);
-                OnEffectPeriodic += AuraEffectPeriodicFn(spell_karazhan_brittle_bones_AuraScript::Update, EFFECT_0, SPELL_AURA_DUMMY);
-            }
-        };
-
-        AuraScript* GetAuraScript() const
-        {
-            return new spell_karazhan_brittle_bones_AuraScript();
         }
-};
 
-class spell_karazhan_overload : public SpellScriptLoader
-{
-    public:
-        spell_karazhan_overload() : SpellScriptLoader("spell_karazhan_overload") { }
-
-        class spell_karazhan_overload_AuraScript : public AuraScript
+        void SetData(uint32 type, uint32 data) override
         {
-            PrepareAuraScript(spell_karazhan_overload_AuraScript);
-
-            void PeriodicTick(AuraEffect const* auraEffect)
-            {                
-                PreventDefaultAction();
-                GetUnitOwner()->CastCustomSpell(SPELL_OVERLOAD, SPELLVALUE_BASE_POINT0, int32(auraEffect->GetAmount() * (2.0, auraEffect->GetTickNumber())), GetUnitOwner(), true);
-            }
-
-            void Register()
+            switch (type)
             {
-                OnEffectPeriodic += AuraEffectPeriodicFn(spell_karazhan_overload_AuraScript::PeriodicTick, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
+                case DATA_OPERA_OZ_DEATHCOUNT:
+                    if (data == SPECIAL)
+                        ++OzDeathCount;
+                    else if (data == IN_PROGRESS)
+                        OzDeathCount = 0;
+                    break;
             }
-        };
-
-        AuraScript* GetAuraScript() const
-        {
-            return new spell_karazhan_overload_AuraScript();
         }
-};
 
-class spell_karazhan_blink : public SpellScriptLoader
-{
-    public:
-        spell_karazhan_blink() : SpellScriptLoader("spell_karazhan_blink") { }
-
-        class spell_karazhan_blink_SpellScript : public SpellScript
+        bool SetBossState(uint32 type, EncounterState state) override
         {
-            PrepareSpellScript(spell_karazhan_blink_SpellScript);
+            if (!InstanceScript::SetBossState(type, state))
+                return false;
 
-            void HandleDummy(SpellEffIndex effIndex, int32 &dmg)
+            switch (type)
             {
-                PreventHitDefaultEffect(effIndex);
-                GetCaster()->GetThreatManager().ResetAllThreat();
-                if (Unit* target = GetHitUnit())
-                    GetCaster()->CastSpell(target, SPELL_BLINK, true);
+                case DATA_OPERA_PERFORMANCE:
+                    if (state == DONE)
+                    {
+                        HandleGameObject(StageDoorLeftGUID, true);
+                        HandleGameObject(StageDoorRightGUID, true);
+                        if (GameObject* sideEntrance = instance->GetGameObject(SideEntranceDoor))
+                            sideEntrance->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
+                        // @todo
+                        //UpdateEncounterStateForKilledCreature(16812);
+                    }
+                    break;
+                case DATA_CHESS:
+                    if (state == DONE)
+                        DoRespawnGameObject(DustCoveredChest, (24*3600)*IN_MILLISECONDS);
+                    break;
+                default:
+                    break;
             }
 
-            void Register()
-            {
-                OnEffectHitTarget += SpellEffectFn(spell_karazhan_blink_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
-            }
-        };
-
-        SpellScript* GetSpellScript() const
-        {
-            return new spell_karazhan_blink_SpellScript();
+            return true;
         }
+
+         void SetGuidData(uint32 type, ObjectGuid data) override
+         {
+             if (type == DATA_IMAGE_OF_MEDIVH)
+                 ImageGUID = data;
+         }
+
+        void OnGameObjectCreate(GameObject* go) override
+        {
+            switch (go->GetEntry())
+            {
+                case GO_STAGE_CURTAIN:
+                    CurtainGUID = go->GetGUID();
+                    break;
+                case GO_STAGE_DOOR_LEFT:
+                    StageDoorLeftGUID = go->GetGUID();
+                    if (GetBossState(DATA_OPERA_PERFORMANCE) == DONE)
+                        go->SetGoState(GO_STATE_ACTIVE);
+                    break;
+                case GO_STAGE_DOOR_RIGHT:
+                    StageDoorRightGUID = go->GetGUID();
+                    if (GetBossState(DATA_OPERA_PERFORMANCE) == DONE)
+                        go->SetGoState(GO_STATE_ACTIVE);
+                    break;
+                case GO_PRIVATE_LIBRARY_DOOR:
+                    LibraryDoor = go->GetGUID();
+                    break;
+                case GO_MASSIVE_DOOR:
+                    MassiveDoor = go->GetGUID();
+                    break;
+                case GO_GAMESMAN_HALL_DOOR:
+                    GamesmansDoor = go->GetGUID();
+                    break;
+                case GO_GAMESMAN_HALL_EXIT_DOOR:
+                    GamesmansExitDoor = go->GetGUID();
+                    break;
+                case GO_NETHERSPACE_DOOR:
+                    NetherspaceDoor = go->GetGUID();
+                    break;
+                case GO_MASTERS_TERRACE_DOOR:
+                    MastersTerraceDoor[0] = go->GetGUID();
+                    break;
+                case GO_MASTERS_TERRACE_DOOR2:
+                    MastersTerraceDoor[1] = go->GetGUID();
+                    break;
+                case GO_SIDE_ENTRANCE_DOOR:
+                    SideEntranceDoor = go->GetGUID();
+                    if (GetBossState(DATA_OPERA_PERFORMANCE) == DONE)
+                        go->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
+                    else
+                        go->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
+                    break;
+                case GO_DUST_COVERED_CHEST:
+                    DustCoveredChest = go->GetGUID();
+                    break;
+                case GO_BLACKENED_URN:
+                    BlackenedUrnGUID = go->GetGUID();
+                    break;
+            }
+
+            switch (OperaEvent)
+            {
+                /// @todo Set Object visibilities for Opera based on performance
+                case EVENT_OZ:
+                    break;
+
+                case EVENT_HOOD:
+                    break;
+
+                case EVENT_RAJ:
+                    break;
+            }
+        }
+
+        uint32 GetData(uint32 type) const override
+        {
+            switch (type)
+            {
+                case DATA_OPERA_PERFORMANCE:
+                    return OperaEvent;
+                case DATA_OPERA_OZ_DEATHCOUNT:
+                    return OzDeathCount;
+            }
+
+            return 0;
+        }
+
+        ObjectGuid GetGuidData(uint32 type) const override
+        {
+            switch (type)
+            {
+                case DATA_KILREK:
+                    return KilrekGUID;
+                case DATA_TERESTIAN:
+                    return TerestianGUID;
+                case DATA_MOROES:
+                    return MoroesGUID;
+                case DATA_NIGHTBANE:
+                    return NightbaneGUID;
+                case DATA_GO_STAGEDOORLEFT:
+                    return StageDoorLeftGUID;
+                case DATA_GO_STAGEDOORRIGHT:
+                    return StageDoorRightGUID;
+                case DATA_GO_CURTAINS:
+                    return CurtainGUID;
+                case DATA_GO_LIBRARY_DOOR:
+                    return LibraryDoor;
+                case DATA_GO_MASSIVE_DOOR:
+                    return MassiveDoor;
+                case DATA_GO_SIDE_ENTRANCE_DOOR:
+                    return SideEntranceDoor;
+                case DATA_GO_GAME_DOOR:
+                    return GamesmansDoor;
+                case DATA_GO_GAME_EXIT_DOOR:
+                    return GamesmansExitDoor;
+                case DATA_GO_NETHER_DOOR:
+                    return NetherspaceDoor;
+                case DATA_MASTERS_TERRACE_DOOR_1:
+                    return MastersTerraceDoor[0];
+                case DATA_MASTERS_TERRACE_DOOR_2:
+                    return MastersTerraceDoor[1];
+                case DATA_IMAGE_OF_MEDIVH:
+                    return ImageGUID;
+                case DATA_GO_BLACKENED_URN:
+                    return BlackenedUrnGUID;
+            }
+
+            return ObjectGuid::Empty;
+        }
+
+    private:
+        uint32 OperaEvent;
+        uint32 OzDeathCount;
+        uint32 OptionalBossCount;
+        ObjectGuid CurtainGUID;
+        ObjectGuid StageDoorLeftGUID;
+        ObjectGuid StageDoorRightGUID;
+        ObjectGuid KilrekGUID;
+        ObjectGuid TerestianGUID;
+        ObjectGuid MoroesGUID;
+        ObjectGuid NightbaneGUID;
+        ObjectGuid LibraryDoor;                 // Door at Shade of Aran
+        ObjectGuid MassiveDoor;                 // Door at Netherspite
+        ObjectGuid SideEntranceDoor;            // Side Entrance
+        ObjectGuid GamesmansDoor;               // Door before Chess
+        ObjectGuid GamesmansExitDoor;           // Door after Chess
+        ObjectGuid NetherspaceDoor;             // Door at Malchezaar
+        ObjectGuid MastersTerraceDoor[2];
+        ObjectGuid ImageGUID;
+        ObjectGuid DustCoveredChest;
+        ObjectGuid BlackenedUrnGUID;
+    };
 };
 
 void AddSC_instance_karazhan()
 {
     new instance_karazhan();
-    new spell_karazhan_brittle_bones();
-    new spell_karazhan_overload();
-    new spell_karazhan_blink();
 }
