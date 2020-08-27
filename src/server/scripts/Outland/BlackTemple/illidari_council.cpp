@@ -697,7 +697,7 @@ public:
                 });
         }
 
-        void HandleScript(SpellEffIndex /*effIndex*/)
+        void HandleScript(SpellEffIndex /*effIndex*/, int32 &dmg)
         {
             Unit* caster = GetCaster();
             Unit* target = GetHitUnit();
@@ -714,8 +714,7 @@ public:
 
         void Register() override
         {
-            // @todo
-            // OnEffectHitTarget += SpellEffectFn(spell_illidari_council_judgement_SpellScript::HandleScript, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+            OnEffectHitTarget += SpellEffectFn(spell_illidari_council_judgement_SpellScript::HandleScript, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             AfterCast += SpellCastFn(spell_illidari_council_judgement_SpellScript::OnFinishCast);
         }
     };

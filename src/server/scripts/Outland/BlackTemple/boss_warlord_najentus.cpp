@@ -11,33 +11,34 @@
 
 enum Yells
 {
-    SAY_AGGRO                        = 0,
-    SAY_NEEDLE                        = 1,
-    SAY_SLAY                        = 2,
+    SAY_AGGRO                          = 0,
+    SAY_NEEDLE                         = 1,
+    SAY_SLAY                           = 2,
     SAY_SPECIAL                        = 3,
-    SAY_ENRAGE                        = 4,
-    SAY_DEATH                        = 5
+    SAY_ENRAGE                         = 4,
+    SAY_DEATH                          = 5,
 };
 
 enum Spells
 {
-    SPELL_NEEDLE_SPINE                = 39992,
-    SPELL_NEEDLE_SPINE_DAMAGE        = 39835,
-    SPELL_TIDAL_BURST                = 39878,
-    SPELL_TIDAL_SHIELD                = 39872,
-    SPELL_IMPALING_SPINE            = 39837,
+    SPELL_NEEDLE_SPINE                 = 39992,
+    SPELL_NEEDLE_SPINE_DAMAGE          = 39835,
+    SPELL_TIDAL_BURST                  = 39878,
+    SPELL_TIDAL_SHIELD                 = 39872,
+    SPELL_IMPALING_SPINE               = 39837,
     SPELL_SUMMON_IMPALING_SPINE        = 39929,
-    SPELL_BERSERK                    = 26662
+    SPELL_CREATE_NAJENTUS_SPINE        = 39956,
+    SPELL_BERSERK                      = 26662,
 };
 
 enum Events
 {
     EVENT_SPELL_BERSERK                = 1,
-    EVENT_YELL                        = 2,
-    EVENT_SPELL_NEEDLE                = 3,
-    EVENT_SPELL_SPINE                = 4,
-    EVENT_SPELL_SHIELD                = 5,
-    EVENT_KILL_SPEAK                = 6
+    EVENT_YELL                         = 2,
+    EVENT_SPELL_NEEDLE                 = 3,
+    EVENT_SPELL_SPINE                  = 4,
+    EVENT_SPELL_SHIELD                 = 5,
+    EVENT_KILL_SPEAK                   = 6,
 };
 
 class boss_najentus : public CreatureScript
@@ -52,13 +53,12 @@ public:
 
     struct boss_najentusAI : public BossAI
     {
-        boss_najentusAI(Creature* creature) : BossAI(creature, DATA_HIGH_WARLORD_NAJENTUS)
-        {
-        }
+        boss_najentusAI(Creature* creature) : BossAI(creature, DATA_HIGH_WARLORD_NAJENTUS) { }
 
         void Reset()
         {
             BossAI::Reset();
+            SpineTargetGUID.Clear();
         }
 
         void KilledUnit(Unit* victim)
@@ -87,6 +87,18 @@ public:
             events.RescheduleEvent(EVENT_SPELL_SHIELD, 60000);
         }
 
+        bool RemoveImpalingSpine()
+        {
+            if (!SpineTargetGUID)
+                return false;
+
+            Unit* target = ObjectAccessor::GetUnit(*me, SpineTargetGUID);
+            if (target && target->HasAura(SPELL_IMPALING_SPINE))
+                target->RemoveAurasDueToSpell(SPELL_IMPALING_SPINE);
+            SpineTargetGUID.Clear();
+            return true;
+        }
+
         void UpdateAI(uint32 diff)
         {
             if (!UpdateVictim())
@@ -112,10 +124,11 @@ public:
                     events.ScheduleEvent(EVENT_SPELL_NEEDLE, 15000);
                     break;
                 case EVENT_SPELL_SPINE:
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1))
+                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 200.0f, true))
                     {
                         me->CastSpell(target, SPELL_IMPALING_SPINE, false);
                         target->CastSpell(target, SPELL_SUMMON_IMPALING_SPINE, true);
+                        SpineTargetGUID = target->GetGUID();
                         Talk(SAY_NEEDLE);
                     }
                     events.ScheduleEvent(EVENT_SPELL_SPINE, 20000);
@@ -128,6 +141,8 @@ public:
 
             DoMeleeAttackIfReady();
         }
+    private:
+        ObjectGuid SpineTargetGUID;
     };
 };
 
@@ -189,9 +204,29 @@ class spell_najentus_hurl_spine : public SpellScriptLoader
         }
 };
 
+class go_najentus_spine : public GameObjectScript
+{
+public:
+    go_najentus_spine() : GameObjectScript("go_najentus_spine") { }
+
+    bool OnGossipHello(Player* player, GameObject* go)
+    {
+        if (InstanceScript* instance = go->GetInstanceScript())
+            if (Creature* Najentus = ObjectAccessor::GetCreature(*go, instance->GetGuidData(DATA_HIGH_WARLORD_NAJENTUS)))
+                if (CAST_AI(boss_najentus::boss_najentusAI, Najentus->AI())->RemoveImpalingSpine())
+                {
+                    player->CastSpell(player, SPELL_CREATE_NAJENTUS_SPINE, true);
+                    go->Delete();
+                }
+        return true;
+    }
+
+};
+
 void AddSC_boss_najentus()
 {
     new boss_najentus();
     new spell_najentus_needle_spine();
     new spell_najentus_hurl_spine();
+	new go_najentus_spine();
 }

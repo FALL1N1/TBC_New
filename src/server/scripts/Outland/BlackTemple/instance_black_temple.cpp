@@ -265,7 +265,7 @@ class spell_black_template_free_friend : public SpellScriptLoader
         {
             PrepareSpellScript(spell_black_template_free_friend_SpellScript);
 
-            void HandleDummy(SpellEffIndex effIndex, int32& damage)
+            void HandleDummy(SpellEffIndex effIndex, int32& dmg)
             {
                 PreventHitDefaultEffect(effIndex);
                 Unit* target = GetHitUnit();
@@ -282,8 +282,7 @@ class spell_black_template_free_friend : public SpellScriptLoader
 
             void Register()
             {
-                // @todo
-                //OnEffectHitTarget += SpellEffectFn(spell_black_template_free_friend_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_black_template_free_friend_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 
@@ -501,8 +500,7 @@ class spell_black_temple_bloodbolt : public SpellScriptLoader
 
             void Register()
             {
-                // @todo
-                //OnEffectHitTarget += SpellEffectFn(spell_black_temple_bloodbolt_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_black_temple_bloodbolt_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 

@@ -274,7 +274,7 @@ class spell_mother_shahraz_fatal_attraction : public SpellScriptLoader
                     }
             }
 
-            void HandleTeleportUnits(SpellEffIndex effIndex)
+            void HandleTeleportUnits(SpellEffIndex effIndex, int32 &dmg)
             {
                 if (Unit* target = GetHitUnit())
                     GetCaster()->CastSpell(target, SPELL_FATAL_ATTRACTION_AURA, true);
@@ -284,7 +284,7 @@ class spell_mother_shahraz_fatal_attraction : public SpellScriptLoader
             {
                 OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_mother_shahraz_fatal_attraction_SpellScript::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
                 OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_mother_shahraz_fatal_attraction_SpellScript::SetDest, EFFECT_1, TARGET_DEST_CASTER_RANDOM);
-                // @todo OnEffectHitTarget += SpellEffectFn(spell_mother_shahraz_fatal_attraction_SpellScript::HandleTeleportUnits, EFFECT_0, SPELL_EFFECT_TELEPORT_UNITS);
+                OnEffectHitTarget += SpellEffectFn(spell_mother_shahraz_fatal_attraction_SpellScript::HandleTeleportUnits, EFFECT_0, SPELL_EFFECT_TELEPORT_UNITS);
             }
         };
 

@@ -315,10 +315,55 @@ public:
     }
 };
 
+class spell_magtheridon_shadow_grasp_visual : public SpellScriptLoader
+{
+    public:
+        spell_magtheridon_shadow_grasp_visual() : SpellScriptLoader("spell_magtheridon_shadow_grasp_visual") { }
+
+        class spell_magtheridon_shadow_grasp_visual_AuraScript : public AuraScript
+        {
+            PrepareAuraScript(spell_magtheridon_shadow_grasp_visual_AuraScript);
+
+            bool Validate(SpellInfo const* /*spell*/) override
+            {
+                return ValidateSpellInfo(
+                {
+                    SPELL_SHADOW_CAGE,
+                    SPELL_SHADOW_GRASP_VISUAL
+                });
+            }
+
+            void OnApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+            {
+                Unit* target = GetTarget();
+
+                if (target->GetAuraCount(SPELL_SHADOW_GRASP_VISUAL) == 5)
+                    target->CastSpell(target, SPELL_SHADOW_CAGE, true);
+            }
+
+            void OnRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+            {
+                GetTarget()->RemoveAurasDueToSpell(SPELL_SHADOW_CAGE);
+            }
+
+            void Register() override
+            {
+                AfterEffectApply += AuraEffectApplyFn(spell_magtheridon_shadow_grasp_visual_AuraScript::OnApply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+                AfterEffectRemove += AuraEffectRemoveFn(spell_magtheridon_shadow_grasp_visual_AuraScript::OnRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+            }
+        };
+
+        AuraScript* GetAuraScript() const override
+        {
+            return new spell_magtheridon_shadow_grasp_visual_AuraScript();
+        }
+};
+
 void AddSC_boss_magtheridon()
 {
     new boss_magtheridon();
     new spell_magtheridon_blaze();
     new spell_magtheridon_shadow_grasp();
+	new spell_magtheridon_shadow_grasp_visual();
 }
 
