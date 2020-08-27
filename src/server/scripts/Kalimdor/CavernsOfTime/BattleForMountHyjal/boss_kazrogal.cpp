@@ -95,7 +95,7 @@ public:
         {
             if (IsEvent)
             {
-                //Must update npc_escortAI
+                //Must update EscortAI
                 EscortAI::UpdateAI(diff);
                 if (!go)
                 {

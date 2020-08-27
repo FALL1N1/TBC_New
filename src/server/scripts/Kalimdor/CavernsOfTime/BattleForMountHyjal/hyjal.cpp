@@ -65,7 +65,7 @@ public:
         if (player->IsGameMaster())
             ;// player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, GOSSIP_ITEM_GM1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
 
-        //player->SEND_GOSSIP_MENU(907, creature->GetGUID());
+        //SendGossipMenuFor(player, 907, creature->GetGUID());
         SendGossipMenuFor(player, 907, creature);
         return true;
     }
@@ -151,7 +151,7 @@ public:
         if (player->IsGameMaster())
             ;// player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, GOSSIP_ITEM_GM1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
 
-        //player->SEND_GOSSIP_MENU(907, creature->GetGUID());
+        //SendGossipMenuFor(player, 907, creature->GetGUID());
         SendGossipMenuFor(player, 907, creature);
         return true;
     }
