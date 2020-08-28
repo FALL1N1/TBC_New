@@ -8,7 +8,7 @@ enum Spells
     SPELL_HOLYFIRE      = 29522,
     SPELL_HOLYWRATH     = 32445,
     SPELL_HOLYGROUND    = 29523,
-    SPELL_BERSERK       = 26662
+    SPELL_BERSERK       = 26662,
 };
 
 enum Yells
@@ -54,11 +54,10 @@ public:
             BossAI::JustEngagedWith(who);
             Talk(SAY_AGGRO);
 
-            DoCastSelf(SPELL_HOLYGROUND, true);
             events.ScheduleEvent(EVENT_REPENTANCE, 28s, 32s);
             events.ScheduleEvent(EVENT_HOLYFIRE, 12s, 20s);
             events.ScheduleEvent(EVENT_HOLYWRATH, 25s, 35s);
-            events.ScheduleEvent(EVENT_HOLYGROUND, 2s);
+            events.ScheduleEvent(EVENT_HOLYGROUND, 25s, 35s);
             events.ScheduleEvent(EVENT_ENRAGE, 10min);
         }
 
@@ -95,8 +94,9 @@ public:
                         DoCastSelf(SPELL_BERSERK, true);
                         break;
                     case EVENT_HOLYGROUND:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 80, true))
-                            DoCast(target, SPELL_HOLYGROUND, true);
+                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 80, true, true)) { 
+                            me->CastSpell(target, SPELL_HOLYGROUND);
+                        }
                         events.Repeat(Seconds(15), Seconds(25)); 
                         break;
                     default:

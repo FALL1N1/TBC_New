@@ -349,7 +349,8 @@ public:
         bool GossipHello(Player* player) override
         {
             // Check for death of Moroes and if opera event is not done already
-            if (instance->GetBossState(DATA_MOROES) == DONE && instance->GetBossState(DATA_OPERA_PERFORMANCE) != DONE)
+            // @todo :: do we really need this? the gates are closed anyway
+            //if (instance->GetBossState(DATA_MOROES) == DONE && instance->GetBossState(DATA_OPERA_PERFORMANCE) != DONE)
             {
                 AddGossipItemFor(player, GOSSIP_ICON_CHAT, OZ_GOSSIP1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
 
@@ -367,7 +368,7 @@ public:
 
                 return true;
             }
-
+            TC_LOG_INFO("server.worldserver", "gossip open");
             SendGossipMenuFor(player, 8978, me->GetGUID());
             return true;
         }

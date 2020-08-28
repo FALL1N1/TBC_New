@@ -998,8 +998,11 @@ void PretendToDie(Creature* creature)
     creature->SetHealth(0);
     creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
     creature->GetMotionMaster()->Clear();
-    creature->GetMotionMaster()->MoveIdle();
-    creature->SetStandState(UNIT_STAND_STATE_DEAD);
+    creature->GetMotionMaster()->MoveIdle(); 
+    creature->SetStandState(UNIT_STAND_STATE_DEAD); 
+    creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
+    creature->SetRooted(true);
+    //TC_LOG_INFO("server.worldserver", "PretendToDie()");
 }
 
 void Resurrect(Creature* target)
@@ -1014,7 +1017,10 @@ void Resurrect(Creature* target)
         target->AI()->AttackStart(target->GetVictim());
     }
         else
-            target->GetMotionMaster()->Initialize();
+            target->GetMotionMaster()->Initialize();  
+    target->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
+    target->SetRooted(false);
+    //TC_LOG_INFO("server.worldserver", "Resurrect()");
 }
 
 class boss_julianne : public CreatureScript
