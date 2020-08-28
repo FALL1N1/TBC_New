@@ -18560,26 +18560,21 @@ void Player::RemovePet(Pet* pet, PetSaveMode mode, bool returnreagent, RemovePet
 
 void Player::StopCastingCharm(Aura* except /*= nullptr*/)
 {
-#ifdef LICH_KING
-    if (IsGhouled())
-    {
-        RemoveGhoul();
-        return;
-    }
-#endif
-
     Unit* charm = GetCharmed();
     if (!charm)
         return;
+	
+
+    // karazhan hack
+    {
+        charm->RemoveAura(30019); 
+        RemoveAura(30019);
+    }
 
     if (charm->GetTypeId() == TYPEID_UNIT)
     {
         if (charm->ToCreature()->HasUnitTypeMask(UNIT_MASK_PUPPET))
             static_cast<Puppet*>(charm)->UnSummon();
-#ifdef LICH_KING
-        else if (charm->IsVehicle())
-            ExitVehicle();
-#endif
     }
     if (GetCharmedGUID())
         charm->RemoveCharmAuras(except);
@@ -18590,7 +18585,7 @@ void Player::StopCastingCharm(Aura* except /*= nullptr*/)
         if (!ObjectGuid(charm->GetCharmerGUID()).IsEmpty())
         {
             TC_LOG_FATAL("entities.player", "Player::StopCastingCharm: Charmed unit has charmer %s", ObjectGuid(charm->GetCharmerGUID()).ToString().c_str());
-            ABORT();
+            //ABORT();
         }
 
         SetCharm(charm, false);

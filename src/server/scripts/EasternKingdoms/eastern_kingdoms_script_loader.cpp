@@ -25,6 +25,7 @@ void AddSC_boss_moroes();
 void AddSC_boss_netherspite();
 void AddSC_boss_nightbane();
 void AddSC_boss_malchezaar(); 
+void AddSC_karazhan_chess_event();
 void AddSC_boss_shade_of_aran();
 void AddSC_boss_terestian_illhoof();
 void AddSC_bosses_opera();
@@ -87,6 +88,7 @@ void AddEasternKingdomsScripts()
     AddSC_boss_netherspite();
     AddSC_boss_nightbane();
     AddSC_boss_malchezaar(); 
+	AddSC_karazhan_chess_event();
     AddSC_boss_shade_of_aran();
     AddSC_boss_terestian_illhoof();
     AddSC_bosses_opera();

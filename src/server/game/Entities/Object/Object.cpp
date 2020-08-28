@@ -3600,6 +3600,10 @@ ReputationRank WorldObject::GetFactionReactionTo(FactionTemplateEntry const* fac
 
 bool WorldObject::IsHostileTo(WorldObject const* unit) const
 {
+	// Karazhan chess exception
+	if ((((Unit*)this)->GetFaction() == 1689 && unit->ToUnit()->GetFaction() == 1690) || (((Unit*)this)->GetFaction() == 1690 && unit->ToUnit()->GetFaction() == 1689))
+		return true;
+
     return GetReactionTo(unit) <= REP_HOSTILE;
 }
 

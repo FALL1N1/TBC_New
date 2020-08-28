@@ -3145,6 +3145,44 @@ void SpellMgr::LoadSpellInfoCorrections()
 
         switch (spellInfo->Id)
         {
+		//
+		// KARAZHAN CHESS SPELLS 
+		// Control Piece
+		case 30019:
+			//spellInfo->Effects[EFFECT_0].Effect = 0; // SPELL_AURA_BIND_SIGHT
+			spellInfo->Effects[EFFECT_1].Effect = 0; // SPELL_AURA_PERIODIC_DUMMY
+			spellInfo->Effects[EFFECT_2].Effect = 0; // SPELL_AURA_MOD_CHARM
+			//spellInfo->Effects[EFFECT_0].Effect = 0;
+			//spellInfo->Effects[EFFECT_0].ApplyAuraName = SPELL_AURA_MOD_CHARM;
+			//spellInfo->Effects[EFFECT_0].BasePoints = 0;
+			//spellInfo->Effects[EFFECT_2].ApplyAuraName = SPELL_AURA_BIND_SIGHT;
+			//spellInfo->Effects[EFFECrT_2].BasePoints = 0;
+			//spellInfo->Effects[EFFECT_2].ApplyAuraName = SPELL_AURA_MOD_POSSESS;
+		break;
+		
+		// Burning Flames
+		case 39384:
+			spellInfo->Effects[EFFECT_1].Effect = 0; //! Has double damage for some reason
+		break;
+
+		// Game In Session
+		case 39331:
+			spellInfo->Attributes |= SPELL_ATTR0_CANT_CANCEL;
+		break;
+		
+		// Move
+		case 37144:
+		case 37146:
+		case 37148: 
+			spellInfo->AttributesEx4 &= ~SPELL_ATTR4_CAN_CAST_WHILE_CASTING; 
+		break;
+		
+		// Change Facing
+		case 30284: 
+			//spellInfo->CategoryRecoveryTime = 5000;
+			//spellInfo->CategoryRecoveryTime = 5000; 
+		break;
+		// KARAZHAN CHESS SPELLS
         case 379: //earth shield heal effect
         case 33076: //Prayer of mending
         case 33110: //Prayer of mending

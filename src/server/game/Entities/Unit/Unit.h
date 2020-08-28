@@ -675,7 +675,7 @@ class TC_GAME_API CharmInfo
         bool HasCommandState(CommandStates state) { return (_CommandState == state); }
 
         void InitPossessCreateSpells();
-        void InitCharmCreateSpells();
+        void InitCharmCreateSpells(bool withPetBar = true);
         void InitPetActionBar();
         void InitEmptyActionBar(bool withAttack = true);
 
@@ -1328,7 +1328,7 @@ class TC_GAME_API Unit : public WorldObject
 		void RemoveAllMinionsByEntry(uint32 entry);
         //void SetPet(Pet* pet);
 		void SetCharm(Unit* target, bool apply);
-		bool SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* aurApp = nullptr);
+		bool SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* aurApp = nullptr, bool withPetBars = true);
         void RemoveCharmedBy(Unit* charmer);
         void RestoreFaction();
 
@@ -1931,7 +1931,9 @@ class TC_GAME_API Unit : public WorldObject
         TempSummon const* ToTempSummon() const { if (IsSummon()) return reinterpret_cast<TempSummon const*>(this); else return nullptr; }
 
         bool IsJustCCed() { return (m_justCCed > 0); }
-        
+
+		uint32 GetOldFactionId() const { return _oldFactionId; }
+
         virtual void Talk(std::string const& text, ChatMsg msgType, Language language, float textRange, WorldObject const* target);
         virtual void Say(std::string const& text, Language language = LANG_UNIVERSAL, WorldObject const* target = nullptr);
         virtual void Yell(std::string const& text, Language language = LANG_UNIVERSAL, WorldObject const* target = nullptr);

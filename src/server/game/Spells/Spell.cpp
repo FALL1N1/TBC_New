@@ -6407,7 +6407,7 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
                         return SPELL_FAILED_CANT_BE_CHARMED;
 
                     int32 localDamage = CalculateDamage(i);
-                    if (localDamage && int32(target_->GetLevel()) > localDamage)
+                    if (m_spellInfo->Id != 30019 && localDamage && int32(target_->GetLevel()) > localDamage)
                         return SPELL_FAILED_HIGHLEVEL;
                 }
 

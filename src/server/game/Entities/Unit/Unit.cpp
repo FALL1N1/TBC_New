@@ -9118,7 +9118,7 @@ void CharmInfo::InitPossessCreateSpells()
         InitEmptyActionBar();
 }
 
-void CharmInfo::InitCharmCreateSpells()
+void CharmInfo::InitCharmCreateSpells(bool withPetBar /* = true */)
 {
     if(_unit->GetTypeId() == TYPEID_PLAYER)                //charmed players don't have spells
     {
@@ -9129,7 +9129,8 @@ void CharmInfo::InitCharmCreateSpells()
     {
         auto info = _unit->ToCreature()->GetCreatureTemplate();
         if (!(info->DifficultyFlags.Flags2 & CREATURE_DIFFICULTYFLAGS_2_NO_DEFAULT_PET_BAR))
-            InitPetActionBar();
+			if (withPetBar)
+				InitPetActionBar();
     }
 
     for (uint32 x = 0; x < MAX_SPELL_CHARM; ++x)
@@ -9143,7 +9144,7 @@ void CharmInfo::InitCharmCreateSpells()
             continue;
         }
 
-        if (spellInfo->IsPassive())
+        if (!withPetBar && spellInfo->IsPassive())
         {
             _unit->CastSpell(_unit, spellInfo->Id, true);
             _charmspells[x].SetActionAndType(spellId, ACT_PASSIVE);
@@ -10446,7 +10447,7 @@ void Unit::SetConfused(bool apply)
     UpdateSuppressedMover();
 }
 
-bool Unit::SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* aurApp /*= nullptr*/)
+bool Unit::SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* aurApp /*= nullptr*/, bool withPetBars)
 {
     if (!charmer)
         return false;
@@ -10559,7 +10560,7 @@ bool Unit::SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* au
         if (type == CHARM_TYPE_POSSESS)
             info->InitPossessCreateSpells();
         else
-            info->InitCharmCreateSpells();
+            info->InitCharmCreateSpells(withPetBars);
     }
 
     if (playerCharmer)
