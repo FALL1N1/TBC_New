@@ -24,7 +24,8 @@ enum Events
     EVENT_REPENTANCE    = 1,
     EVENT_HOLYFIRE      = 2,
     EVENT_HOLYWRATH     = 3,
-    EVENT_ENRAGE        = 4
+    EVENT_ENRAGE        = 4,
+    EVENT_HOLYGROUND    = 5,
 };
 
 class boss_maiden_of_virtue : public CreatureScript
@@ -54,9 +55,10 @@ public:
             Talk(SAY_AGGRO);
 
             DoCastSelf(SPELL_HOLYGROUND, true);
-            events.ScheduleEvent(EVENT_REPENTANCE, 33s, 45s);
-            events.ScheduleEvent(EVENT_HOLYFIRE, 8s);
-            events.ScheduleEvent(EVENT_HOLYWRATH, 15s, 25s);
+            events.ScheduleEvent(EVENT_REPENTANCE, 28s, 32s);
+            events.ScheduleEvent(EVENT_HOLYFIRE, 12s, 20s);
+            events.ScheduleEvent(EVENT_HOLYWRATH, 25s, 35s);
+            events.ScheduleEvent(EVENT_HOLYGROUND, 2s);
             events.ScheduleEvent(EVENT_ENRAGE, 10min);
         }
 
@@ -82,7 +84,7 @@ public:
                     case EVENT_HOLYFIRE:
                         if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 50, true))
                             DoCast(target, SPELL_HOLYFIRE);
-                        events.Repeat(Seconds(8), Seconds(19));
+                        events.Repeat(Seconds(12), Seconds(20));
                         break;
                     case EVENT_HOLYWRATH:
                         if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 80, true))
@@ -91,6 +93,11 @@ public:
                         break;
                     case EVENT_ENRAGE:
                         DoCastSelf(SPELL_BERSERK, true);
+                        break;
+                    case EVENT_HOLYGROUND:
+                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 80, true))
+                            DoCast(target, SPELL_HOLYGROUND, true);
+                        events.Repeat(Seconds(15), Seconds(25)); 
                         break;
                     default:
                         break;
