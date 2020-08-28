@@ -1601,7 +1601,8 @@ public:
             uint32 const action = player->PlayerTalkClass->GetGossipOptionAction(gossipListId);
             if (action == GOSSIP_ACTION_INFO_DEF + 1)
             {
-                player->NearTeleportTo(-11106.92f, -1843.32f, 229.626f, 4.2331f);
+                // why?
+                //player->NearTeleportTo(-11106.92f, -1843.32f, 229.626f, 4.2331f);
                 player->CastSpell(me, SPELL_CONTROL_PIECE, false);
                 //me->AddAura(SPELL_CONTROL_PIECE, player);
                 //player->AddAura(SPELL_CONTROL_PIECE, me);
