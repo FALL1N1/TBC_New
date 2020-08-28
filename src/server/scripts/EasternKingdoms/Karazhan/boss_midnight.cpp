@@ -110,6 +110,7 @@ public:
 
                 if (Creature* midnight = ObjectAccessor::GetCreature(*me, _midnightGUID))
                     midnight->AI()->DoCastAOE(SPELL_MOUNT, true);
+                me->GetThreatManager().ClearAllThreat();
             }
         }
 
@@ -297,6 +298,7 @@ public:
             {
                 _phase = PHASE_MOUNTED;
                 DoCastAOE(SPELL_MOUNT, true);
+                me->GetThreatManager().ClearAllThreat();
             }
         }
 
