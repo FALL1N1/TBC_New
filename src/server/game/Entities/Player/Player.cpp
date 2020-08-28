@@ -18566,9 +18566,10 @@ void Player::StopCastingCharm(Aura* except /*= nullptr*/)
 	
 
     // karazhan hack
-    {
-        charm->RemoveAura(30019); 
-        RemoveAura(30019);
+    if (GetCharmedGUID() || GetZoneId() == 3457)
+    { 
+        if (charm->ToPet())
+            RemovePet(charm->ToPet(), PetSaveMode::PET_SAVE_AS_DELETED, false, REMOVE_PET_REASON_SCRIPT);
     }
 
     if (charm->GetTypeId() == TYPEID_UNIT)
@@ -18576,6 +18577,7 @@ void Player::StopCastingCharm(Aura* except /*= nullptr*/)
         if (charm->ToCreature()->HasUnitTypeMask(UNIT_MASK_PUPPET))
             static_cast<Puppet*>(charm)->UnSummon();
     }
+
     if (GetCharmedGUID())
         charm->RemoveCharmAuras(except);
 
