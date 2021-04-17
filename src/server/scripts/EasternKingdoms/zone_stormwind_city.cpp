@@ -47,6 +47,7 @@ public:
 
 enum Bartleby
 { 
+    FACTION_ENEMY       = 168,
     QUEST_BEAT          = 1640
 };
 
