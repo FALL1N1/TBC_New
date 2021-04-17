@@ -53,62 +53,50 @@ enum Bartleby
 class npc_bartleby : public CreatureScript
 {
 public:
-    npc_bartleby() : CreatureScript("npc_bartleby") { }
+	npc_bartleby() : CreatureScript("npc_bartleby") { }
 
-    bool OnQuestAccept(Player* player, Creature* creature, Quest const* quest)
-    {
-        if (quest->GetQuestId() == QUEST_BEAT)
-        {
-            creature->SetFaction(FACTION_ENEMY);
-            creature->AI()->AttackStart(player);
-        }
-        return true;
-    }
+	struct npc_bartlebyAI : public ScriptedAI
+	{
+		npc_bartlebyAI(Creature* creature) : ScriptedAI(creature)
+		{
+			m_uiNormalFaction = creature->GetFaction();
+		}
 
-    CreatureAI* GetAI(Creature* creature) const
-    {
-        return new npc_bartlebyAI(creature);
-    }
+		uint32 m_uiNormalFaction;
 
-    struct npc_bartlebyAI : public ScriptedAI
-    {
-        npc_bartlebyAI(Creature* creature) : ScriptedAI(creature)
-        {
-            m_uiNormalFaction = creature->GetFaction();
-        }
+		void Reset() override
+		{
+			if (me->GetFaction() != m_uiNormalFaction)
+				me->SetFaction(m_uiNormalFaction);
+		}
 
-        uint32 m_uiNormalFaction;
+		void DamageTaken(Unit* pDoneBy, uint32 &uiDamage) override
+		{
+			if (uiDamage > me->GetHealth() || me->HealthBelowPctDamaged(15, uiDamage))
+			{
+				//Take 0 damage
+				uiDamage = 0;
 
-        void Reset()
-        {
-            if (me->GetFaction() != m_uiNormalFaction)
-                me->SetFaction(m_uiNormalFaction);
-        }
+				if (Player* player = pDoneBy->ToPlayer())
+					player->AreaExploredOrEventHappens(QUEST_BEAT);
+				EnterEvadeMode();
+			}
+		}
 
-        void AttackedBy(Unit* pAttacker)
-        {
-            if (me->GetVictim())
-                return;
+		void QuestAccept(Player* player, Quest const* quest) override
+		{
+			if (quest->GetQuestId() == QUEST_BEAT)
+			{
+				me->SetFaction(FACTION_ENEMY);
+				AttackStart(player);
+			}
+		}
+	};
 
-            if (me->IsFriendlyTo(pAttacker))
-                return;
-
-            AttackStart(pAttacker);
-        }
-
-        void DamageTaken(Unit* pDoneBy, uint32 &uiDamage)
-        {
-            if (pDoneBy && (uiDamage >= me->GetHealth() || me->HealthBelowPctDamaged(15, uiDamage)))
-            {
-                //Take 0 damage
-                uiDamage = 0;
-
-                if (Player* player = pDoneBy->ToPlayer())
-                    player->AreaExploredOrEventHappens(QUEST_BEAT);
-                EnterEvadeMode();
-            }
-        }
-    };
+	CreatureAI* GetAI(Creature* creature) const override
+	{
+		return new npc_bartlebyAI(creature);
+	}
 };
 
 /*######
