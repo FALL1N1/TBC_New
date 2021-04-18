@@ -55,21 +55,6 @@ class npc_bartleby : public CreatureScript
 public:
     npc_bartleby() : CreatureScript("npc_bartleby") { }
 
-    bool OnQuestAccept(Player* player, Creature* creature, Quest const* quest)
-    {
-        if (quest->GetQuestId() == QUEST_BEAT)
-        {
-            creature->SetFaction(FACTION_ENEMY);
-            creature->AI()->AttackStart(player);
-        }
-        return true;
-    }
-
-    CreatureAI* GetAI(Creature* creature) const
-    {
-        return new npc_bartlebyAI(creature);
-    }
-
     struct npc_bartlebyAI : public ScriptedAI
     {
         npc_bartlebyAI(Creature* creature) : ScriptedAI(creature)
@@ -79,36 +64,39 @@ public:
 
         uint32 m_uiNormalFaction;
 
-        void Reset()
+        void Reset() override
         {
             if (me->GetFaction() != m_uiNormalFaction)
-                me->SetFaction(m_uiNormalFaction);
+            me->SetFaction(m_uiNormalFaction);
         }
 
-        void AttackedBy(Unit* pAttacker)
+        void DamageTaken(Unit* pDoneBy, uint32 &uiDamage) override
         {
-            if (me->GetVictim())
-                return;
-
-            if (me->IsFriendlyTo(pAttacker))
-                return;
-
-            AttackStart(pAttacker);
-        }
-
-        void DamageTaken(Unit* pDoneBy, uint32 &uiDamage)
-        {
-            if (pDoneBy && (uiDamage >= me->GetHealth() || me->HealthBelowPctDamaged(15, uiDamage)))
+            if (uiDamage > me->GetHealth() || me->HealthBelowPctDamaged(15, uiDamage))
             {
                 //Take 0 damage
                 uiDamage = 0;
 
                 if (Player* player = pDoneBy->ToPlayer())
-                    player->AreaExploredOrEventHappens(QUEST_BEAT);
+                player->AreaExploredOrEventHappens(QUEST_BEAT);
                 EnterEvadeMode();
             }
         }
+
+        void QuestAccept(Player* player, Quest const* quest) override
+        {
+            if (quest->GetQuestId() == QUEST_BEAT)
+            {
+                me->SetFaction(FACTION_ENEMY);
+                AttackStart(player);
+            }
+        }
     };
+
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new npc_bartlebyAI(creature);
+    }
 };
 
 /*######
